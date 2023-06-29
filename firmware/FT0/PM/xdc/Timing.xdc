@@ -71,10 +71,14 @@ set_false_path -from [get_cells {{CH*_shift_reg[*]} {CH*_rc_reg[*]} {ampl_sat_re
 set_false_path -from [get_cells ipbus_control_reg_reg[*][*]]  
 
 #set_max_delay  -datapath_only -from [get_clocks RXDataCLK] -to [get_pins IsRXData0_reg/D] 5.000
-set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg FitGbtPrg/gbt_bank_gen.gbtBankDsgn/GBT_Status_O_reg[*] IsRXData0_reg}]
-set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff*}]
-set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg FitGbtPrg/gbt_bank_gen.gbtBankDsgn/Rx_Ready_ff*}]
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg}]
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/GBT_Status_O_reg[*] IsRXData0_reg}]
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff*}]
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/Rx_Ready_ff*}]
 
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/prbs_rxErrCounter_txclk_reg[*]}]
+set_false_path -from [get_clocks TX_CLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/prbs_rxSel_rxclk_reg[*]}]
+set_false_path -from [get_clocks TX_CLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/reset_rx_errors_rxclk_reg}]
 
 
 #set_max_delay -datapath_only -from [get_cells {GBT1/gbtBank_1/gbtRx_gen[1].gbtRx/rxGearbox/rxGearboxLatOpt_gen.rxGearboxLatOpt/*_reg[*]}] -to [get_pins {GBT1/gbtBank_1/gbtRx_gen[1].gbtRx/descrambler/*/*_reg[*]/D}] 16.000

@@ -46,6 +46,9 @@ entity GBT_TX_RX is
         IsRXData        : out std_logic;
         reset_rx_errors : in  std_logic;
         reset_fsm       : in  std_logic;
+        prbs_txSel      : in std_logic_vector(2 downto 0);
+        prbs_rxSel      : in std_logic_vector(2 downto 0);
+        prbs_txForceErr : in std_logic;
         GBT_Status_O    : out gbt_status_t
         );
 end GBT_TX_RX;
@@ -107,6 +110,14 @@ architecture structural of GBT_TX_RX is
   signal gbt_not_ready                   : std_logic;
   signal gbt_ready_cnt                   : std_logic_vector(27 downto 0);
   
+  signal prbs_rxSel_rxclk        : std_logic_vector(2 downto 0);
+  signal reset_rx_errors_rxclk   : std_logic;
+  signal prbs_rxErrCounter       : std_logic_vector(15 downto 0);
+  signal prbs_rxErrCounter_txclk : std_logic_vector(15 downto 0);
+  
+  attribute keep of prbs_rxSel_rxclk : signal is "true";
+  attribute keep of reset_rx_errors_rxclk : signal is "true";
+
   -- attribute mark_debug : string;
   -- attribute mark_debug of gbt_not_ready        : signal is "true";
   -- attribute mark_debug of gbt_ready_cnt       : signal is "true";
@@ -237,10 +248,10 @@ begin  --========####   Architecture Body   ####========--
   to_gbtBank_mgt.mgtLink(1).drp_di   <= x"0000";
   to_gbtBank_mgt.mgtLink(1).drp_we   <= '0';
 
-  to_gbtBank_mgt.mgtLink(1).prbs_txSel      <= "000";
-  to_gbtBank_mgt.mgtLink(1).prbs_rxSel      <= "000";
-  to_gbtBank_mgt.mgtLink(1).prbs_txForceErr <= '0';
-  to_gbtBank_mgt.mgtLink(1).prbs_rxCntReset <= '0';
+  to_gbtBank_mgt.mgtLink(1).prbs_txSel      <= prbs_txSel;
+  to_gbtBank_mgt.mgtLink(1).prbs_rxSel      <= prbs_rxSel_rxclk;
+  to_gbtBank_mgt.mgtLink(1).prbs_txForceErr <= prbs_txForceErr;
+  to_gbtBank_mgt.mgtLink(1).prbs_rxCntReset <= reset_rx_errors_rxclk;
 
   to_gbtBank_mgt.mgtLink(1).conf_diffCtrl   <= "1000";   -- Comment: 807 mVppd
   to_gbtBank_mgt.mgtLink(1).conf_postCursor <= "00000";  -- Comment: 0.00 dB (default)
@@ -301,9 +312,27 @@ begin  --========####   Architecture Body   ####========--
       );
 
 
+
   --============--
   -- Status --
   --============--
+  process(rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(1))
+  begin
+
+    if rising_edge(rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(1)) then
+	  prbs_rxSel_rxclk <= prbs_rxSel;
+	  reset_rx_errors_rxclk <= reset_rx_errors;
+	  
+	  if reset_rx_errors_rxclk = '1' then
+	    prbs_rxErrCounter <= (others => '0');
+	  elsif from_gbtBank_mgt.mgtLink(1).prbs_rxErr = '1' and prbs_rxErrCounter /= x"FFFF" then
+	    prbs_rxErrCounter <= prbs_rxErrCounter + 1;
+	  end if;
+	  
+	  
+    end if;
+  end process;
+
 
   process(TXDataClk)
   begin
@@ -311,6 +340,7 @@ begin  --========####   Architecture Body   ####========--
     if TXDataClk'event and (TXDataClk = '1') then
       gbtRx_ErrorDet_ff <=  from_gbtBank_gbtRx(1).rxErrorDetected;
 	  Rx_Ready_ff <= from_gbtBank_gbtRx(1).ready;
+	  prbs_rxErrCounter_txclk <= prbs_rxErrCounter;
 	  
       GBT_Status_O.gbtRx_ErrorDet <= gbtRx_ErrorDet_ff;
 
@@ -324,6 +354,7 @@ begin  --========####   Architecture Body   ####========--
       GBT_Status_O.tx_fsmResetDone <= from_gbtBank_mgt.mgtLink(1).tx_fsmResetDone;
 	  GBT_Status_O.gbt_not_ready   <= gbt_not_ready;
 	  GBT_Status_O.gbtRx_Ready     <= Rx_Ready_ff;
+	  GBT_Status_O.prbs_rxErrCnt   <= prbs_rxErrCounter_txclk;
 
 
       -- rx_err_det reset done by command, gbt_reset, after each gbt sync procedure

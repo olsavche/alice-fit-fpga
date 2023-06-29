@@ -136,6 +136,10 @@ package fit_gbt_common_package is
     reset_err_report    : std_logic;    -- reset error report fifo
 	
     BCID_offset : std_logic_vector(BC_id_bitdepth-1 downto 0);  -- delay between ID from TX and ID in module data
+	
+    prbs_txSel      : std_logic_vector(2 downto 0);
+    prbs_rxSel      : std_logic_vector(2 downto 0);
+    prbs_txForceErr : std_logic;
 
   end record;
 
@@ -184,7 +188,11 @@ package fit_gbt_common_package is
       force_idle          => '0',
 	  reset_err_report    => '0',
 	  
-      BCID_offset => x"000"
+      BCID_offset => x"000",
+	  
+      prbs_txSel      => "000",
+      prbs_rxSel      => "000",
+      prbs_txForceErr => '0'
       );
 -- =============================================================
 
@@ -211,6 +219,7 @@ package fit_gbt_common_package is
     gbtRx_ErrorLatch    : std_logic;    --reg bit 8
     gbt_not_ready       : std_logic;    --reg bit 9
     gbt_was_ready       : std_logic;    --reg bit 6
+	prbs_rxErrCnt       : std_logic_vector(15 downto 0);
   end record;
 
   type datagen_report_t is record
@@ -293,7 +302,7 @@ package fit_gbt_common_package is
 	pm_data_buff : std_logic_vector(errrep_pmdat_len*80-1 downto 0);
 	rawdatfifo_wr_rate : std_logic_vector(11 downto 0);
 	rawdatfifo_rd_rate : std_logic_vector(11 downto 0);
-	
+		
   end record;
 
   constant test_gbt_status_void : gbt_status_t :=
@@ -311,7 +320,8 @@ package fit_gbt_common_package is
       gbtRx_ErrorDet   => '0',
       gbtRx_ErrorLatch => '0',
       gbt_not_ready    => '0',
-      gbt_was_ready    => '0'
+      gbt_was_ready    => '0',
+	  prbs_rxErrCnt    => x"0000"
       );
 -- =============================================================
 
@@ -455,6 +465,11 @@ package body fit_gbt_common_package is
     cntr_reg.RDH_data.PRT_BIT := cntrl_reg_addrreg(9)(31 downto 24);
     -- reg 10 is empty
     cntr_reg.BCID_offset      := cntrl_reg_addrreg(11)(11 downto 0);
+	
+	cntr_reg.prbs_txSel       := cntrl_reg_addrreg(11)(14 downto 12);
+	cntr_reg.prbs_rxSel       := cntrl_reg_addrreg(11)(17 downto 15);
+	cntr_reg.prbs_txForceErr  := cntrl_reg_addrreg(11)(18);
+
     cntr_reg.trg_data_select  := cntrl_reg_addrreg(12)(31 downto 0);
 
     return cntr_reg;
@@ -526,7 +541,7 @@ package body fit_gbt_common_package is
     status_reg_addrreg(4)                     := status_reg.sel_fifo_max & status_reg.sel_drop_cnt;
     status_reg_addrreg(5)                     := status_reg.gbt_data_cnt;
     status_reg_addrreg(6)                     := status_reg.bcind_trg.count & status_reg.bcind_trg.bc & status_reg.bcind_evt.count & status_reg.bcind_evt.bc;
-    status_reg_addrreg(7)                     := status_reg.ipbusrd_fifo_cnt & x"0000";
+    status_reg_addrreg(7)                     := status_reg.ipbusrd_fifo_cnt & status_reg.GBT_status.prbs_rxErrCnt;
     status_reg_addrreg(ipbusrd_fifo_out_addr) := status_reg.ipbusrd_fifo_out;  --8
     status_reg_addrreg(9)                     := status_reg.event_counter;
 	status_reg_addrreg(10)                    := status_reg.ipbusrd_err_report;

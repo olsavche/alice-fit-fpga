@@ -464,6 +464,9 @@ begin
         IsRXData        => RX_IsData_rxclk_from_GBT,
         reset_rx_errors => Control_register_I.reset_gbt_rxerror,
 		reset_fsm       => FSM_Clocks.Reset_dclk,
+        prbs_txSel      => Control_register_I.prbs_txSel,
+        prbs_rxSel      => Control_register_I.prbs_rxSel,
+        prbs_txForceErr => Control_register_I.prbs_txForceErr,
         GBT_Status_O    => from_gbt_bank_prj_GBT_status
         );
   end generate gbt_bank_gen;
