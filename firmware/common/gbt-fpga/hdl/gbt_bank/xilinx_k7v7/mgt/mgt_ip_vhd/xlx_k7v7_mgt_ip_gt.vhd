@@ -182,9 +182,13 @@ port
     ------------- Transmit Ports - TX Initialization and Reset Ports -----------
     txresetdone_out                         : out  std_logic;
     ----------------- Transmit Ports - TX Polarity Control Ports ---------------
-    txpolarity_in                           : in   std_logic
-
-
+    txpolarity_in                           : in   std_logic;
+    -------------------------PRBS Detection -----------------------
+    prbs_txSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_rxSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_txForceErr_in                      : in   std_logic;
+    prbs_rxCntReset_in                      : in   std_logic;
+    prbs_rxErr_out                          : out  std_logic
 );
 
 
@@ -641,10 +645,10 @@ begin
         ------------------ Receive Ports - FPGA RX interface Ports -----------------
         RXDATA                          =>      rxdata_i,
         ------------------- Receive Ports - Pattern Checker Ports ------------------
-        RXPRBSERR                       =>      open,
-        RXPRBSSEL                       =>      tied_to_ground_vec_i(2 downto 0),
+        RXPRBSERR                       =>      prbs_rxErr_out,
+        RXPRBSSEL                       =>      prbs_rxSel_in,
         ------------------- Receive Ports - Pattern Checker ports ------------------
-        RXPRBSCNTRESET                  =>      tied_to_ground_i,
+        RXPRBSCNTRESET                  =>      prbs_rxCntReset_in,
         -------------------- Receive Ports - RX  Equalizer Ports -------------------
         RXDFEXYDEN                      =>      tied_to_vcc_i,
         RXDFEXYDHOLD                    =>      tied_to_ground_i,
@@ -794,7 +798,7 @@ begin
         TXRATE                          =>      tied_to_ground_vec_i(2 downto 0),
         TXSWING                         =>      tied_to_ground_i,
         ------------------ Transmit Ports - Pattern Generator Ports ----------------
-        TXPRBSFORCEERR                  =>      tied_to_ground_i,
+        TXPRBSFORCEERR                  =>      prbs_txForceErr_in,
         ------------------ Transmit Ports - TX Buffer Bypass Ports -----------------
 		--/*/--
         -- TXDLYBYPASS                     =>      tied_to_ground_i,
@@ -877,7 +881,7 @@ begin
         ------------------ Transmit Ports - TX8b/10b Encoder Ports -----------------
         TX8B10BBYPASS                   =>      tied_to_ground_vec_i(7 downto 0),
         ------------------ Transmit Ports - pattern Generator Ports ----------------
-        TXPRBSSEL                       =>      tied_to_ground_vec_i(2 downto 0),
+        TXPRBSSEL                       =>      prbs_txSel_in,
         ----------------------- Tx Configurable Driver  Ports ----------------------
         TXQPISENN                       =>      open,
         TXQPISENP                       =>      open

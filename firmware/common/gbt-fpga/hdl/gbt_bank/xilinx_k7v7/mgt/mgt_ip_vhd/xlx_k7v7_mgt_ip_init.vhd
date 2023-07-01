@@ -178,7 +178,14 @@ port
 
     --____________________________COMMON PORTS________________________________
      GT0_QPLLOUTCLK_IN  : in std_logic;
-     GT0_QPLLOUTREFCLK_IN : in std_logic
+     GT0_QPLLOUTREFCLK_IN : in std_logic;
+     
+    -------------------------PRBS Detection -----------------------
+    prbs_txSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_rxSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_txForceErr_in                      : in   std_logic;
+    prbs_rxCntReset_in                      : in   std_logic;
+    prbs_rxErr_out                          : out  std_logic
 
 );
 
@@ -308,8 +315,14 @@ port
 
     --____________________________COMMON PORTS________________________________
      GT0_QPLLOUTCLK_IN : in  std_logic;
-     GT0_QPLLOUTREFCLK_IN : in  std_logic 
-
+     GT0_QPLLOUTREFCLK_IN : in  std_logic;
+     
+    -------------------------PRBS Detection -----------------------
+    prbs_txSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_rxSel_in                           : in   std_logic_vector(2 downto 0);
+    prbs_txForceErr_in                      : in   std_logic;
+    prbs_rxCntReset_in                      : in   std_logic;
+    prbs_rxErr_out                          : out  std_logic
 );
 end component;
 
@@ -697,7 +710,13 @@ begin
 
     --____________________________COMMON PORTS________________________________
         gt0_qplloutclk_in               =>      gt0_qplloutclk_in,
-        gt0_qplloutrefclk_in            =>      gt0_qplloutrefclk_in
+        gt0_qplloutrefclk_in            =>      gt0_qplloutrefclk_in,
+        -------------------------PRBS Detection -----------------------
+        prbs_txSel_in                   => prbs_txSel_in,
+        prbs_rxSel_in                   => prbs_rxSel_in,
+        prbs_txForceErr_in              => prbs_txForceErr_in,
+        prbs_rxCntReset_in              => prbs_rxCntReset_in,
+        prbs_rxErr_out                  => prbs_rxErr_out
     );
 
 

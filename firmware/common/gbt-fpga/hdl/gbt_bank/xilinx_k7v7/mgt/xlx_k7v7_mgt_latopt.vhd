@@ -200,7 +200,7 @@ begin                 --========####   Architecture Body   ####========--
        MGT_O.mgtLink(i).tx_fsmResetDone <= txfsm_reset_done(i);
 
        MGT_O.mgtLink(i).rxCdrLock <= '0';
-       MGT_O.mgtLink(i).prbs_rxErr <= '0';
+       --MGT_O.mgtLink(i).prbs_rxErr <= '0';
        
               
        xlx_k7v7_mgt_std_i: entity  work.xlx_k7v7_mgt_ip
@@ -295,7 +295,13 @@ begin                 --========####   Architecture Body   ####========--
        
            --____________________________COMMON PORTS________________________________
             GT0_QPLLOUTCLK_IN  => '0',
-            GT0_QPLLOUTREFCLK_IN => '0' 
+            GT0_QPLLOUTREFCLK_IN => '0',
+           -------------------------PRBS Detection -----------------------
+              prbs_txSel_in                   => MGT_I.mgtLink(i).prbs_txSel,
+              prbs_rxSel_in                   => MGT_I.mgtLink(i).prbs_rxSel,
+              prbs_txForceErr_in              => MGT_I.mgtLink(i).prbs_txForceErr,
+              prbs_rxCntReset_in              => MGT_I.mgtLink(i).prbs_rxCntReset,
+              prbs_rxErr_out                  => MGT_O.mgtLink(i).prbs_rxErr
        );
        
        rxWordClkBufg: bufg
