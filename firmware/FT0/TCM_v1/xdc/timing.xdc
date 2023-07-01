@@ -75,6 +75,10 @@ set_max_delay -datapath_only -from [get_clocks RXDataCLK] -to [get_cells FitGbtP
 set_multicycle_path 8 -setup -from [get_clocks TX_CLK] -to [get_pins  FitGbtPrg/RxData_ClkSync_comp/rx_error_reset_sclk_reg/D]
 set_multicycle_path 7 -hold -end -from [get_clocks TX_CLK] -to [get_pins  FitGbtPrg/RxData_ClkSync_comp/rx_error_reset_sclk_reg/D]
 
+set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/prbs_rxErrCounter_txclk_reg[*]}]
+set_false_path -from [get_clocks TX_CLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/prbs_rxSel_rxclk_reg[*]}]
+set_false_path -from [get_clocks TX_CLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/reset_rx_errors_rxclk_reg}]
+
 
 # Module_Data_Gen ----------------------------------
 set_multicycle_path 8 -setup -from [get_clocks TX_CLK] -to [get_pins  FitGbtPrg/Module_Data_Gen_comp/using_generator_sc_reg/D]
