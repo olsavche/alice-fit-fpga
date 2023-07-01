@@ -110,6 +110,7 @@ architecture structural of GBT_TX_RX is
   signal gbt_not_ready                   : std_logic;
   signal gbt_ready_cnt                   : std_logic_vector(27 downto 0);
   
+  signal prbs_txForceErr_ff, prbs_txForceErr_cmd : std_logic;
   signal prbs_rxSel_rxclk        : std_logic_vector(2 downto 0);
   signal reset_rx_errors_rxclk   : std_logic;
   signal prbs_rxErrCounter       : std_logic_vector(15 downto 0);
@@ -250,7 +251,7 @@ begin  --========####   Architecture Body   ####========--
 
   to_gbtBank_mgt.mgtLink(1).prbs_txSel      <= prbs_txSel;
   to_gbtBank_mgt.mgtLink(1).prbs_rxSel      <= prbs_rxSel_rxclk;
-  to_gbtBank_mgt.mgtLink(1).prbs_txForceErr <= prbs_txForceErr;
+  to_gbtBank_mgt.mgtLink(1).prbs_txForceErr <= prbs_txForceErr_cmd;
   to_gbtBank_mgt.mgtLink(1).prbs_rxCntReset <= reset_rx_errors_rxclk;
 
   to_gbtBank_mgt.mgtLink(1).conf_diffCtrl   <= "1000";   -- Comment: 807 mVppd
@@ -355,6 +356,12 @@ begin  --========####   Architecture Body   ####========--
 	  GBT_Status_O.gbt_not_ready   <= gbt_not_ready;
 	  GBT_Status_O.gbtRx_Ready     <= Rx_Ready_ff;
 	  GBT_Status_O.prbs_rxErrCnt   <= prbs_rxErrCounter_txclk;
+	  
+	  -- PRBS TX force error for single cycle
+	  prbs_txForceErr_ff <= prbs_txForceErr;
+	  if prbs_txForceErr = '1' and prbs_txForceErr_ff = '0' then
+	    prbs_txForceErr_cmd <= '1'; else prbs_txForceErr_cmd <= '0';
+	  end if;
 
 
       -- rx_err_det reset done by command, gbt_reset, after each gbt sync procedure
