@@ -44,6 +44,8 @@ entity FIT_GBT_project is
 
     -- GBT data to/from FIT readout 
     RxData_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+    RxData_SC_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+    RxData_WB_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
     IsRxData_rxclk_to_FITrd_I : in  std_logic;
     Data_from_FITrd_O         : out std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
     IsData_from_FITrd_O       : out std_logic;
@@ -52,6 +54,8 @@ entity FIT_GBT_project is
     Data_to_GBT_I             : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
     IsData_to_GBT_I           : in  std_logic;
     RxData_rxclk_from_GBT_O   : out std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+    RxData_SC_rxclk_from_GBT_O   : out std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+    RxData_WB_rxclk_from_GBT_O   : out std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
     IsRxData_rxclk_from_GBT_O : out std_logic;
 
     -- FIT readour status, including BCOR_ID to PM/TCM
@@ -67,17 +71,21 @@ architecture Behavioral of FIT_GBT_project is
 
 -- GBT data
   signal RX_IsData_DataClk            : std_logic;
-  signal RX_exData_from_RXsync        : std_logic_vector(GBT_data_word_bitdepth+GBT_slowcntr_bitdepth-1 downto 0);
+  signal RX_exData_from_RXsync        : std_logic_vector(GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto 0);
   signal RX_Data_DataClk              : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+  signal RX_Data_SC_DataClk           : std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+  signal RX_Data_WB_DataClk           : std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
   signal RX_IsData_from_orbcgen       : std_logic;
   signal RX_Data_from_orbcgen         : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
   signal TX_IsData_from_txgen         : std_logic;
   signal TX_Data_from_txgen           : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
   signal RX_IsData_rxclk_from_GBT     : std_logic;
   signal RX_Data_rxclk_from_GBT       : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+  signal RX_Data_SC_rxclk_from_GBT    : std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+  signal RX_Data_WB_rxclk_from_GBT    : std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
   signal data_from_cru_constructor    : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
   signal is_data_from_cru_constructor : std_logic;
-  signal RxData_rxclk_to_FITrd_ext    : std_logic_vector(GBT_data_word_bitdepth+4-1 downto 0);
+  signal RxData_rxclk_to_FITrd_ext    : std_logic_vector(GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto 0);
 
 -- status
   signal from_gbt_bank_prj_GBT_status     : gbt_status_t;
@@ -154,9 +162,13 @@ begin
 
 
   RX_Data_DataClk           <= RX_exData_from_RXsync(GBT_data_word_bitdepth-1 downto 0);
+  RX_Data_SC_DataClk        <= RX_exData_from_RXsync(GBT_data_word_bitdepth+GBT_slowcntr_bitdepth-1 downto GBT_data_word_bitdepth);
+  RX_Data_WB_DataClk        <= RX_exData_from_RXsync(GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto GBT_data_word_bitdepth+GBT_slowcntr_bitdepth);
   Data_from_FITrd_O         <= TX_Data_from_txgen   when (Control_register_I.Trigger_Gen.usage_generator /= gen_tx_out) else RX_Data_from_orbcgen;
   IsData_from_FITrd_O       <= TX_IsData_from_txgen when (Control_register_I.Trigger_Gen.usage_generator /= gen_tx_out) else RX_IsData_from_orbcgen;
   RxData_rxclk_from_GBT_O   <= RX_Data_rxclk_from_GBT;
+  RxData_SC_rxclk_from_GBT_O   <= RX_Data_SC_rxclk_from_GBT;
+  RxData_WB_rxclk_from_GBT_O   <= RX_Data_WB_rxclk_from_GBT;
   IsRxData_rxclk_from_GBT_O <= RX_IsData_rxclk_from_GBT;
 
   -- errors by sys clock for ila
@@ -218,7 +230,7 @@ begin
       CLK_PH_CNT_O         => FIT_GBT_STATUS.rx_phase,
       CLK_PH_ERROR_O       => FIT_GBT_STATUS.Rx_Phase_error
       );
-  RxData_rxclk_to_FITrd_ext <= x"0" & RxData_rxclk_to_FITrd_I;
+  RxData_rxclk_to_FITrd_ext <= RxData_WB_rxclk_to_FITrd_I & RxData_SC_rxclk_to_FITrd_I & RxData_rxclk_to_FITrd_I;
 -- =============================================================
 
 -- RX Data Decoder ============================================
@@ -457,16 +469,25 @@ begin
         TXDataClk       => DataClk_I,
         TXData          => Data_to_GBT_I,
         TXData_SC       => x"0",
+        TXData_WB       => x"0000_0000",
         IsTXData        => IsData_to_GBT_I,
         RXDataClk       => GBT_RxFrameClk_O,
         RXData          => RX_Data_rxclk_from_GBT,
-        RXData_SC       => open,
+        RXData_SC       => RX_Data_SC_rxclk_from_GBT,
+        RXData_WB       => RX_Data_WB_rxclk_from_GBT,
+        
+        IsRXData_lb_txclk  => RX_IsData_DataClk,
+        RXData_lb_txclk    => RX_Data_DataClk,
+        RXData_SC_lb_txclk => RX_Data_SC_DataClk,
+        RXData_WB_lb_txclk => RX_Data_WB_DataClk,
+        
         IsRXData        => RX_IsData_rxclk_from_GBT,
         reset_rx_errors => Control_register_I.reset_gbt_rxerror,
 		reset_fsm       => FSM_Clocks.Reset_dclk,
         prbs_txSel      => Control_register_I.prbs_txSel,
         prbs_rxSel      => Control_register_I.prbs_rxSel,
         prbs_txForceErr => Control_register_I.prbs_txForceErr,
+        rxtx_loopback   => Control_register_I.rxtx_data_loopback,
         GBT_Status_O    => from_gbt_bank_prj_GBT_status
         );
   end generate gbt_bank_gen;
@@ -476,6 +497,8 @@ begin
     MGT_TX_N_O                   <= '0';
     GBT_RxFrameClk_O             <= DataClk_I;
     RX_Data_rxclk_from_GBT       <= (others => '0');
+    RX_Data_SC_rxclk_from_GBT       <= (others => '0');
+    RX_Data_WB_rxclk_from_GBT       <= (others => '0');
     RX_IsData_rxclk_from_GBT     <= '0';
     from_gbt_bank_prj_GBT_status <= test_gbt_status_void;
   end generate gbt_bank_gen_sim;

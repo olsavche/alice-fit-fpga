@@ -39,16 +39,26 @@ entity GBT_TX_RX is
         TXDataClk       : in  std_logic;
         TXData          : in  std_logic_vector (79 downto 0);
         TXData_SC       : in  std_logic_vector (3 downto 0);
+        TXData_WB       : in  std_logic_vector (31 downto 0);
         IsTXData        : in  std_logic;
         RXDataClk       : out std_logic;
         RXData          : out std_logic_vector (79 downto 0);
         RXData_SC       : out std_logic_vector (3 downto 0);
+        RXData_WB       : out std_logic_vector (31 downto 0);
+        
+        -- RX loopback data for link test
+        IsRXData_lb_txclk  : in std_logic;
+        RXData_lb_txclk    : in std_logic_vector (79 downto 0);
+        RXData_SC_lb_txclk : in std_logic_vector (3 downto 0);
+        RXData_WB_lb_txclk : in std_logic_vector (31 downto 0);
+        
         IsRXData        : out std_logic;
         reset_rx_errors : in  std_logic;
         reset_fsm       : in  std_logic;
         prbs_txSel      : in std_logic_vector(2 downto 0);
         prbs_rxSel      : in std_logic_vector(2 downto 0);
         prbs_txForceErr : in std_logic;
+        rxtx_loopback   : in std_logic;
         GBT_Status_O    : out gbt_status_t
         );
 end GBT_TX_RX;
@@ -218,9 +228,11 @@ begin  --========####   Architecture Body   ####========--
   -- GBT Tx     --
   --============--
   to_gbtBank_gbtTx(1).reset             <= gbtTxReset_from_gbtBank_gbtBankRst(1);
-  to_gbtBank_gbtTx(1).isDataSel         <= IsTXData;
-  to_gbtBank_gbtTx(1).data              <= TXData_SC & TXData;
-  to_gbtBank_gbtTx(1).extraData_wideBus <= x"00000000";
+  
+  -- moved to loopback mux
+  -- to_gbtBank_gbtTx(1).isDataSel         <= IsTXData;
+  -- to_gbtBank_gbtTx(1).data              <= TXData_SC & TXData;
+  -- to_gbtBank_gbtTx(1).extraData_wideBus <= TXData_WB;
 
 
 
@@ -233,6 +245,7 @@ begin  --========####   Architecture Body   ####========--
 
   RXData    <= from_gbtBank_gbtRx(1).data(79 downto 0);
   RXData_SC <= from_gbtBank_gbtRx(1).data(83 downto 80);
+  RXData_WB <= from_gbtBank_gbtRx(1).extraData_wideBus;
 
   IsRXData <= from_gbtBank_gbtRx(1).isDataFlag;
 
@@ -334,11 +347,23 @@ begin  --========####   Architecture Body   ####========--
     end if;
   end process;
 
-
   process(TXDataClk)
   begin
 
     if TXDataClk'event and (TXDataClk = '1') then
+    
+      -- RXTX loopbadk link test mode
+      if rxtx_loopback = '0' then
+        to_gbtBank_gbtTx(1).isDataSel         <= IsTXData;
+        to_gbtBank_gbtTx(1).data              <= TXData_SC & TXData;
+        to_gbtBank_gbtTx(1).extraData_wideBus <= TXData_WB;
+      else
+        to_gbtBank_gbtTx(1).isDataSel         <= IsRXData_lb_txclk;
+        to_gbtBank_gbtTx(1).data              <= RXData_SC_lb_txclk & RXData_lb_txclk;
+        to_gbtBank_gbtTx(1).extraData_wideBus <= RXData_WB_lb_txclk;
+      end if;
+    
+    
       gbtRx_ErrorDet_ff <=  from_gbtBank_gbtRx(1).rxErrorDetected;
 	  Rx_Ready_ff <= from_gbtBank_gbtRx(1).ready;
 	  prbs_rxErrCounter_txclk <= prbs_rxErrCounter;

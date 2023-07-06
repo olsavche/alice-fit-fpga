@@ -30,6 +30,7 @@ package fit_gbt_common_package is
 -- signal size constants ---------------------------------------
   constant GBT_data_word_bitdepth : integer := 80;
   constant GBT_slowcntr_bitdepth  : integer := 4;
+  constant GBT_widebus_bitdepth   : integer := 32;
   constant Orbit_id_bitdepth      : integer := 32;
   constant BC_id_bitdepth         : integer := 12;
   constant Trigger_bitdepth       : integer := 32;
@@ -140,6 +141,7 @@ package fit_gbt_common_package is
     prbs_txSel      : std_logic_vector(2 downto 0);
     prbs_rxSel      : std_logic_vector(2 downto 0);
     prbs_txForceErr : std_logic;
+    rxtx_data_loopback : std_logic;
 
   end record;
 
@@ -192,7 +194,8 @@ package fit_gbt_common_package is
 	  
       prbs_txSel      => "000",
       prbs_rxSel      => "000",
-      prbs_txForceErr => '0'
+      prbs_txForceErr => '0',
+      rxtx_data_loopback => '0'
       );
 -- =============================================================
 
@@ -469,6 +472,7 @@ package body fit_gbt_common_package is
 	cntr_reg.prbs_txSel       := cntrl_reg_addrreg(11)(14 downto 12);
 	cntr_reg.prbs_rxSel       := cntrl_reg_addrreg(11)(17 downto 15);
 	cntr_reg.prbs_txForceErr  := cntrl_reg_addrreg(11)(18);
+	cntr_reg.rxtx_data_loopback  := cntrl_reg_addrreg(11)(19);
 
     cntr_reg.trg_data_select  := cntrl_reg_addrreg(12)(31 downto 0);
 

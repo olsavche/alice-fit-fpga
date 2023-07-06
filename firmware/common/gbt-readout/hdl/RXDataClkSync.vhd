@@ -25,10 +25,10 @@ entity RXDATA_CLKSync is
     RX_CLK_I : in std_logic;            -- 40MHz RX word clock
 
     RX_IS_DATA_RXCLK_I : in std_logic;  --       data@RX_CLK
-    RX_DATA_RXCLK_I    : in std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth-1 downto 0);  --       data@RX_CLK
+    RX_DATA_RXCLK_I    : in std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto 0);  --       data@RX_CLK
 
     RX_IS_DATA_DATACLK_O : out std_logic;  -- data@SYS_CLK
-    RX_DATA_DATACLK_O    : out std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth-1 downto 0);  -- data@SYS_CLK
+    RX_DATA_DATACLK_O    : out std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto 0);  -- data@SYS_CLK
 
     CLK_PH_CNT_O   : out std_logic_vector(rx_phase_bitdepth-1 downto 0);
     CLK_PH_ERROR_O : out std_logic
@@ -44,7 +44,7 @@ architecture Behavioral of RXDATA_CLKSync is
 
 --  -- data ff by sysclk
   signal RX_IS_DATA_sysclk, RX_IS_DATA_to_dclk : std_logic;
-  signal RX_DATA_sysclk, RX_DATA_to_dclk    : std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth-1 downto 0);
+  signal RX_DATA_sysclk, RX_DATA_to_dclk    : std_logic_vector (GBT_data_word_bitdepth+GBT_slowcntr_bitdepth+GBT_widebus_bitdepth-1 downto 0);
 
 --  -- data ff by data clk
   signal CLK_PH_counter_stop                                       : std_logic_vector (2 downto 0) := "000";

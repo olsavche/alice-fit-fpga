@@ -442,6 +442,8 @@ component TDCCHAN is
    signal IsData_from_FITrd        : STD_LOGIC;
    
    signal RxData_rxclk_from_GBT     : std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+   signal RxData_SC_rxclk_from_GBT     : std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+   signal RxData_WB_rxclk_from_GBT     : std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
    signal IsRxData_rxclk_from_GBT    : STD_LOGIC;
    
    signal PM_data_toreadout		:  board_data_type;
@@ -459,41 +461,45 @@ component TDCCHAN is
        );
    
        Port (        
-           RESET_I                : in  STD_LOGIC;
-           SysClk_I             : in  STD_LOGIC; -- 320MHz system clock
-           DataClk_I             : in  STD_LOGIC; -- 40MHz data clock
-           MgtRefClk_I         : in  STD_LOGIC; -- 200MHz ref clock
-           RxDataClk_I            : in STD_LOGIC; -- 40MHz data clock in RX domain
-           GBT_RxFrameClk_O    : out STD_LOGIC; --Rx GBT frame clk 40MHz
-           FSM_Clocks_O        : out rdclocks_t;
-
-	       IPbusClk_I       : in  std_logic;   -- IPbus clock for error fifo read
-      	   err_report_fifo_rden_i : in std_logic; -- IPbus error report fifo read enable
-           
-           Board_data_I        : in board_data_type; --PM or TCM data
-           Control_register_I    : in readout_control_t;
-	       errors_rden_I      : in std_logic; -- status register EA (errors) was read
-           
-           MGT_RX_P_I         : in  STD_LOGIC;
-           MGT_RX_N_I         : in  STD_LOGIC;
-           MGT_TX_P_O         : out  STD_LOGIC;
-           MGT_TX_N_O        : out  STD_LOGIC;
-           MGT_TX_dsbl_O     : out  STD_LOGIC;
-           
-           -- GBT data to/from FIT readout 
-           RxData_rxclk_to_FITrd_I     : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
-           IsRxData_rxclk_to_FITrd_I    : in  STD_LOGIC;
-           Data_from_FITrd_O             : out  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
-           IsData_from_FITrd_O            : out  STD_LOGIC;
-           
-           -- GBT data to/from GBT project
-           Data_to_GBT_I     : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
-           IsData_to_GBT_I    : in  STD_LOGIC;
-           RxData_rxclk_from_GBT_O     : out  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
-           IsRxData_rxclk_from_GBT_O    : out  STD_LOGIC;
-              -- FIT readour status, including BCOR_ID to PM/TCM
-           readout_status_o : out readout_status_t
-                      
+        RESET_I          : in  std_logic;
+        SysClk_I         : in  std_logic;   -- 320MHz system clock
+        DataClk_I        : in  std_logic;   -- 40MHz data clock
+        MgtRefClk_I      : in  std_logic;   -- 200MHz ref clock
+        RxDataClk_I      : in  std_logic;   -- 40MHz data clock in RX domain
+        GBT_RxFrameClk_O : out std_logic;   --Rx GBT frame clk 40MHz
+        FSM_Clocks_O     : out rdclocks_t;
+    
+        IPbusClk_I       : in  std_logic;   -- IPbus clock for error fifo read
+        err_report_fifo_rden_i : in std_logic; -- IPbus error report fifo read enable
+    
+        Board_data_I       : in board_data_type;    --PM or TCM data @320MHz
+        Control_register_I : in readout_control_t;  -- control registers @DataClk
+        errors_rden_I      : in std_logic; -- status register EA (errors) was read
+    
+        MGT_RX_P_I    : in  std_logic;
+        MGT_RX_N_I    : in  std_logic;
+        MGT_TX_P_O    : out std_logic;
+        MGT_TX_N_O    : out std_logic;
+        MGT_TX_dsbl_O : out std_logic;
+    
+        -- GBT data to/from FIT readout 
+        RxData_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+        RxData_SC_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+        RxData_WB_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
+        IsRxData_rxclk_to_FITrd_I : in  std_logic;
+        Data_from_FITrd_O         : out std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+        IsData_from_FITrd_O       : out std_logic;
+    
+        -- GBT data to/from GBT project
+        Data_to_GBT_I             : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+        IsData_to_GBT_I           : in  std_logic;
+        RxData_rxclk_from_GBT_O   : out std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
+        RxData_SC_rxclk_from_GBT_O   : out std_logic_vector(GBT_slowcntr_bitdepth-1 downto 0);
+        RxData_WB_rxclk_from_GBT_O   : out std_logic_vector(GBT_widebus_bitdepth-1 downto 0);
+        IsRxData_rxclk_from_GBT_O : out std_logic;
+    
+        -- FIT readour status, including BCOR_ID to PM/TCM
+        readout_status_o : out readout_status_t
        );
    end component;
    -- ###############################################
@@ -963,6 +969,8 @@ FitGbtPrg: FIT_GBT_project
 		MGT_TX_dsbl_O		=>	open,
 		
 		RxData_rxclk_to_FITrd_I 	=> RxData_rxclk_from_GBT, --loop back data
+		RxData_SC_rxclk_to_FITrd_I 	=> RxData_SC_rxclk_from_GBT, --loop back data
+		RxData_WB_rxclk_to_FITrd_I 	=> RxData_WB_rxclk_from_GBT, --loop back data
 		IsRxData_rxclk_to_FITrd_I	=> IsRxData_rxclk_from_GBT, --loop back data
 		Data_from_FITrd_O 			=> Data_from_FITrd,
 		IsData_from_FITrd_O			=> IsData_from_FITrd,
@@ -970,6 +978,8 @@ FitGbtPrg: FIT_GBT_project
 		IsData_to_GBT_I				=> IsData_from_FITrd, --loop back data
 		
 		RxData_rxclk_from_GBT_O	 	=> RxData_rxclk_from_GBT,
+		RxData_SC_rxclk_from_GBT_O  => RxData_SC_rxclk_from_GBT,
+		RxData_WB_rxclk_from_GBT_O  => RxData_WB_rxclk_from_GBT,
 		IsRxData_rxclk_from_GBT_O	=> IsRxData_rxclk_from_GBT,
 
 		readout_status_o 	=> readout_status
