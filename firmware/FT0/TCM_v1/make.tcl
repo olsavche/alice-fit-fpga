@@ -293,7 +293,7 @@ if {[string equal $proj_create "yes"]} {
 #-------------------------------------------------------------------------------
 
 #timing report strategy
-config_webtalk -user off
+# config_webtalk -user off
 
 # upgrade_ip [get_ips]
 generate_target synthesis [get_ips] -force

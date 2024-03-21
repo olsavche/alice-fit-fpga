@@ -256,7 +256,7 @@ if {[string equal $proj_create "yes"]} {
 
 
 #timing report strategy
-config_webtalk -user off
+#config_webtalk -user off
 
 
 
@@ -302,7 +302,7 @@ set_property -name "top" -value "testbench_readout" -objects $obj
 
 
 # Create 'synth_1' run (if not found)
-config_webtalk -user off
+#config_webtalk -user off
 
 if {[string equal [get_runs -quiet synth_1] ""]} {
     create_run -name synth_1 -part $part -flow {Vivado Synthesis 2019} -strategy "Flow_PerfOptimized_high" -report_strategy {Timing Closure Reports} -constrset constrs_1
