@@ -6,7 +6,7 @@ set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_g
 set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff*}]
 set_false_path -from [get_clocks RXDataCLK] -to [get_cells {FitGbtPrg/gbt_bank_gen.gbtBankDsgn/gbtRx_ErrorDet_ff_reg FitGbtPrg/gbt_bank_gen.gbtBankDsgn/Rx_Ready_ff*}]
 
-set_max_delay -from [get_cells las_o_reg] -to [get_clocks LCLK] 2.900
+set_max_delay -datapath_only -from [get_cells las_o_reg] -to [get_clocks LCLK] 2.900
 
 ## GBT RX:
 ##--------

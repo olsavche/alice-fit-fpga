@@ -1,5 +1,5 @@
 Property                             Type    Read-only  Value
-CONFIG.Component_Name                string  false      tri_mode_ethernet_mac_0
+CONFIG.Component_Name                string  true       giga_eth_mac
 CONFIG.Data_Rate                     string  false      1_Gbps
 CONFIG.ETHERNET_BOARD_INTERFACE      string  false      Custom
 CONFIG.Enable_1588_1step             string  false      false
@@ -16,7 +16,7 @@ CONFIG.GTX_CLK_OUT.INSERT_VIP        string  false      0
 CONFIG.Half_Duplex                   string  false      false
 CONFIG.Int_Clk_Src                   string  false      user_clk2
 CONFIG.Int_Mode_Type                 string  false      BASEX
-CONFIG.MAC_Speed                     string  false      Tri_speed
+CONFIG.MAC_Speed                     string  false      1000_Mbps
 CONFIG.MDIO_BOARD_INTERFACE          string  false      Custom
 CONFIG.MII_IO                        string  false      true
 CONFIG.M_AXIS_RX.INSERT_VIP          string  false      0
@@ -35,7 +35,7 @@ CONFIG.Make_MDIO_External            string  false      false
 CONFIG.Management_Frequency          string  false      150.00
 CONFIG.Management_Interface          string  false      false
 CONFIG.Number_of_Table_Entries       string  false      0
-CONFIG.Physical_Interface            string  false      Internal
+CONFIG.Physical_Interface            string  false      GMII
 CONFIG.REF_CLK.INSERT_VIP            string  false      0
 CONFIG.RX_AXI_RSTN.INSERT_VIP        string  false      0
 CONFIG.RX_Inband_TS_Enable           string  false      false
@@ -59,7 +59,7 @@ CONFIG.S_AXI_RESETN.INSERT_VIP       string  false      0
 CONFIG.Statistics_Counters           string  false      false
 CONFIG.Statistics_Reset              string  false      true
 CONFIG.Statistics_Width              string  false      64bit
-CONFIG.SupportLevel                  string  false      0
+CONFIG.SupportLevel                  string  false      1
 CONFIG.TX_AXI_RSTN.INSERT_VIP        string  false      0
 CONFIG.TX_Inband_CF_Enable           string  false      false
 CONFIG.TX_MAC_ACLK.INSERT_VIP        string  false      0

@@ -4,10 +4,6 @@ create_clock -period 8.000 -name eth_refclk [get_ports ETHCLK_P]
 create_clock -period 12.500 -name LCLK [get_ports LCLK_P]
 
 
-# Ethernet driven by Ethernet txoutclk (i.e. via transceiver)
-create_generated_clock -name eth_clk_62_5 -source [get_pins ipbus_module/eth/mmcm/inst/mmcm_adv_inst/CLKIN1] [get_pins ipbus_module/eth/mmcm/inst/mmcm_adv_inst/CLKOUT0]
-create_generated_clock -name eth_clk_125 -source [get_pins ipbus_module/eth/mmcm/inst/mmcm_adv_inst/CLKIN1] [get_pins ipbus_module/eth/mmcm/inst/mmcm_adv_inst/CLKOUT1]
-
 # Clocks derived from MMCM driven by Ethernet RefClk directly (i.e. not via transceiver)
 create_generated_clock -name clk_ipb -source [get_pins ipbus_module/clocks/pll/inst/plle2_adv_inst/CLKIN1] [get_pins ipbus_module/clocks/pll/inst/plle2_adv_inst/CLKOUT0]
 create_generated_clock -name free_clk -source [get_pins ipbus_module/clocks/pll/inst/plle2_adv_inst/CLKIN1] [get_pins ipbus_module/clocks/pll/inst/plle2_adv_inst/CLKOUT1]
@@ -32,7 +28,6 @@ set_clock_groups -name ASYNC_CLOCKS1 -asynchronous  -group [get_clocks  TxWordCL
 set_clock_groups -name ASYNC_CLOCKS2 -asynchronous  -group [get_clocks  RxWordCLK] -group [get_clocks -include_generated_clocks MCLKA]
 
 set_clock_groups -name ASYNC_CLOCIPB -asynchronous -group [get_clocks -include_generated_clocks eth_refclk] 
-set_clock_groups -asynchronous  -group [get_clocks -include_generated_clocks ipbus_module/eth/phy/*/gtxe2_i/TXOUTCLK] -group [get_clocks -include_generated_clocks ipbus_module/eth/phy/*/gtxe2_i/RXOUTCLK]
 
 #set_clock_groups -asynchronous -group [get_clocks free_clk]
 #set_clock_groups -asynchronous -group [get_clocks dly_clk]

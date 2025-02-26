@@ -120,6 +120,8 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 set obj [get_filesets sources_1]
 # Import local files from the original project
 set files [list \
+ [file normalize "${origin_dir}/hdl/mdio.vhd" ]\
+ [file normalize "${origin_dir}/hdl/vsc8211_initializer.vhd" ]\
  [file normalize "${origin_dir}/hdl/tcm.vhd" ]\
  [file normalize "${origin_dir}/hdl/counter32.vhd" ]\
  [file normalize "${origin_dir}/hdl/Flash_prog.vhd" ]\
@@ -143,7 +145,6 @@ set files [list \
  [file normalize "${origin_dir}/../../common/ipbus/hdl/clocks_7s_serdes.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/dss_package.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/ipbus_trans_decl.vhd" ]\
- [file normalize "${origin_dir}/../../common/ipbus/hdl/eth_7s_1000basex.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_tx_mux.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_do_rx_reset.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_dualportram_rx.vhd" ]\
@@ -161,7 +162,7 @@ set files [list \
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_rxram_shim.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_build_resend.vhd" ]\
  [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_core/udp_clock_crossing_if.vhd" ]\
- [file normalize "${origin_dir}/../../common/ipbus/hdl/IPBUS_basex.vhd" ]\
+ [file normalize "${origin_dir}/../../common/ipbus/hdl/ipbus_gmii.vhd" ]\
  [file normalize "${origin_dir}/../../common/gbt-fpga/hdl/gbt_bank/core_sources/gbt_rx/gbt_rx_decoder_gbtframe_lmbddet.vhd" ]\
  [file normalize "${origin_dir}/../../common/gbt-fpga/hdl/gbt_bank/core_sources/gbt_tx/gbt_tx_encoder_gbtframe_rsencode.vhd" ]\
  [file normalize "${origin_dir}/../../common/gbt-fpga/hdl/core_sources/rxframeclk_phalgnr/gbt_rx_frameclk_phalgnr.vhd" ]\
@@ -273,6 +274,12 @@ if {[string equal $proj_create "yes"]} {
     set file "[file normalize "$origin_dir/xdc/tcm.xdc"]"
     add_files -fileset constrs_1 [list $file]
     set file_obj [get_files -of_objects [get_filesets constrs_1] [list "$origin_dir/xdc/tcm.xdc"]]
+    set_property -name "processing_order" -value "NORMAL" -objects $file_obj
+
+
+    set file "[file normalize "$origin_dir/xdc/phy.xdc"]"
+    add_files -fileset constrs_1 [list $file]
+    set file_obj [get_files -of_objects [get_filesets constrs_1] [list "$origin_dir/xdc/phy.xdc"]]
     set_property -name "processing_order" -value "NORMAL" -objects $file_obj
 
 

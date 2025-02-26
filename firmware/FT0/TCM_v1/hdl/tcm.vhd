@@ -124,12 +124,8 @@ entity tcm is
        MISO :  out STD_LOGIC;
        LA0 : out  STD_LOGIC_VECTOR (15 downto 0);
        LA1 : out  STD_LOGIC_VECTOR (15 downto 0);
-       LA2 : out  STD_LOGIC_VECTOR (15 downto 0);
-       LA3 : out  STD_LOGIC_VECTOR (15 downto 0);
        LACK0 : out  STD_LOGIC; 
        LACK1 : out  STD_LOGIC; 
-       LACK2 : out  STD_LOGIC; 
-       LACK3 : out  STD_LOGIC;
        LED :  out  STD_LOGIC_VECTOR (7 downto 0);
        MGTCLK_P : in  STD_LOGIC;
        MGTCLK_N : in  STD_LOGIC;
@@ -139,14 +135,30 @@ entity tcm is
        GBT_TX_N : out  STD_LOGIC;
        ETHCLK_P : in  STD_LOGIC;
        ETHCLK_N : in  STD_LOGIC;
-       ETH_RX_P : in  STD_LOGIC;
-       ETH_RX_N : in  STD_LOGIC;
-       ETH_TX_P : out  STD_LOGIC;
-       ETH_TX_N : out  STD_LOGIC;
        FSEL : out  STD_LOGIC;
        FMOSI : out  STD_LOGIC;
-       FMISO : in  STD_LOGIC 
-        );
+       FMISO : in  STD_LOGIC;
+
+      -- GMII TX
+      gmii_tx_clk_o : out std_logic;
+      gmii_tx_en_o  : out std_logic;
+      gmii_tx_er_o  : out std_logic;
+      gmii_txd_o    : out std_logic_vector(7 downto 0);
+
+      -- GMII RX
+      gmii_rx_clk_i : in std_logic;
+      gmii_rx_er_i  : in std_logic;
+      gmii_rx_dv_i  : in std_logic;
+      gmii_rxd_i    : in std_logic_vector(7 downto 0);
+
+      -- MDIO
+      mdc_o   : out   std_logic;
+      mdio_io : inout std_logic;
+
+      -- PHY control signals
+      phy_reset_o  : out std_logic; -- Hardware chip reset
+      phy_sreset_o : out std_logic  -- Software reset
+    );
 end tcm;
 
 architecture RTL of tcm is
@@ -177,8 +189,8 @@ signal spi_bit_count : STD_LOGIC_VECTOR (4 downto 0);
 signal spi_addr, spi_wr_addr : STD_LOGIC_VECTOR (8 downto 0);
 signal spi_rd, spi_wr_rdy, spi_wr0, spi_wr1, spi_wr2, spi_wr_req, spi_na, rd_lock_spi : STD_LOGIC;
 signal SPI_DATA, spi_wr_data : STD_LOGIC_VECTOR (15 downto 0);
-signal LA0I, LA1I, LA2I, LA3I : STD_LOGIC_VECTOR (15 downto 0);
-signal LACK0I,LACK1I,LACK2I,LACK3I : STD_LOGIC;
+signal LA0I, LA1I : STD_LOGIC_VECTOR (15 downto 0);
+signal LACK0I,LACK1I : STD_LOGIC;
 signal ledi : STD_LOGIC_VECTOR (7 downto 0);
 signal ipb_clk, ipb_rst, ipb_str, ipb_iswr, ipb_isrd, ipb_wr, tcmx_select, tcmr_select, tcmr_ack, clk200, dly_rdy, tcmx_ack, tcmx_err, tcmx_wr, tcmr_wr, tcmx_rd_ack : std_logic;
 signal mac_addr: std_logic_vector(47 downto 0);
@@ -247,6 +259,9 @@ signal lasbc : STD_LOGIC;
 
 signal rdout_errf_rd, rdout_errf_rd0, rdout_errf_rd1, rdout_errf_rd2, rdout_errc, rdout_errc0, rdout_errc1, rdout_errc2  : STD_LOGIC;
 
+signal vsc8211_ready : std_logic;
+
+signal clk_20 : std_logic;
 
 component tcm_side is
  Port (CLKA : in STD_LOGIC;
@@ -297,30 +312,8 @@ COMPONENT MULT14xS16
     CE : IN STD_LOGIC;
     P : OUT STD_LOGIC_VECTOR(8 DOWNTO 0)
   );
-END COMPONENT; 
- 
- 
- component IPBUS_basex_infra is
-	port(
-		eth_clk_p: in std_logic; -- 125MHz MGT clock
-		eth_clk_n: in std_logic;
-		eth_rx_p: in std_logic; -- Ethernet MGT input
-		eth_rx_n: in std_logic;
-		eth_tx_p: out std_logic; -- Ethernet MGT output
-		eth_tx_n: out std_logic;
-		clk_ipb_o: out std_logic; -- IPbus clock
-		rst_ipb_o: out std_logic;
-		RESET : in std_logic; -- The signal of doom
-		leds: out std_logic_vector(1 downto 0); -- status LEDs
-		mac_addr: in std_logic_vector(47 downto 0); -- MAC address
-		ip_addr: in std_logic_vector(31 downto 0); -- IP address
-		ipb_in: in ipb_rbus; -- ipbus
-		ipb_out: out ipb_wbus;
-		clk200:  out std_logic;
-		locked:  out std_logic
-		);
-end component;
-	
+END COMPONENT;
+
 
   component FLASH
     generic (   
@@ -671,20 +664,12 @@ ILA0: OBUF
    port map (O => LA0(i), I => LA0I(i) );
 ILA1: OBUF
    port map (O => LA1(i), I => LA1I(i) );
-ILA2: OBUF
-   port map (O => LA2(i), I => LA2I(i) );
-ILA3: OBUF
-   port map (O => LA3(i), I => LA3I(i) );
 end generate;
 	
 ILACK0: OBUF
    port map (O => LACK0, I => LACK0I);
 ILACK1: OBUF
    port map (O => LACK1, I => LACK1I);
-ILACK2: OBUF
-   port map (O => LACK2, I => LACK2I);
-ILACK3: OBUF
-   port map (O => LACK3, I => LACK3I);
 
 ledo1: for i in 0 to 7 generate
 leso0: OBUF  port map (O => LED(i), I => ledi(i) );
@@ -709,33 +694,56 @@ IDL1 : IDELAYCTRL
    );
 
 
+  vsc8211_initializer : entity work.vsc8211_initializer
+  port map (
+    clk_i => clk_20,
 
--- IP-BUS module ===============================================
+    reset_o  => phy_reset_o,
+    sreset_o => phy_sreset_o,
+
+    mdc_o   => mdc_o,
+    mdio_io => mdio_io,
+  
+    ready_o => vsc8211_ready
+  );
 
 
-ipbus_module:  IPBUS_basex_infra port map(
+  ipbus_module: entity work.ipbus_gmii
+  generic map (
+    USE_BUFG => 1
+  ) port map(
     eth_clk_p => ethclk_p,
     eth_clk_n => ethclk_n,
-    eth_tx_p => eth_tx_p,
-    eth_tx_n => eth_tx_n,
-    eth_rx_p => eth_rx_p,
-    eth_rx_n => eth_rx_n,
-    
+
+    clk_20_o => clk_20,
+
+    phy_ready_i => vsc8211_ready,
+
+    gmii_tx_clk_o => gmii_tx_clk_o,
+    gmii_tx_en_o  => gmii_tx_en_o,
+    gmii_tx_er_o  => gmii_tx_er_o,
+    gmii_txd_o    => gmii_txd_o,
+
+    gmii_rx_clk_i => gmii_rx_clk_i,
+    gmii_rx_er_i  => gmii_rx_er_i,
+    gmii_rx_dv_i  => gmii_rx_dv_i,
+    gmii_rxd_i    => gmii_rxd_i,
+
     clk_ipb_o => ipb_clk,
     rst_ipb_o => ipb_rst,
-   
-    
-    RESET => ipb_stp,
-    
-    leds => ipb_leds, -- status LEDs
+
+    RESET    => ipb_stp,
+    leds     => ipb_leds,
     mac_addr => mac_addr,
-    
-    ip_addr => ip_addr,
-    ipb_in => ipb_in,
+    ip_addr  => ip_addr,
+
+    ipb_in  => ipb_in,
     ipb_out => ipb_out,
-    clk200 =>clk200,
-    locked=>ipb_locked
-);
+
+    clk_200_o => clk200,
+    locked => ipb_locked
+  );
+
 
 fl_upg: FLASH generic map (clk_freq => 31250 ) 
               port map (rst=>ipb_rst, clk  => ipb_clk, data_in =>ipb_data_out, data_out =>flash_data_out, A =>ipb_addr(1 downto 0), wr_flshreg =>ipb_iswr, rd_flshreg  =>ipb_isrd, flshreg_sel=>flshreg_sel, FSEL =>FSEL, FMOSI =>FMOSI, FMISO =>FMISO); 
