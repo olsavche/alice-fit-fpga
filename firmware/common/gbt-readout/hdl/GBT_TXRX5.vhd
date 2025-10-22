@@ -59,7 +59,28 @@ entity GBT_TX_RX is
         prbs_rxSel      : in std_logic_vector(2 downto 0);
         prbs_txForceErr : in std_logic;
         rxtx_loopback   : in std_logic;
-        GBT_Status_O    : out gbt_status_t
+        GBT_Status_O    : out gbt_status_t;
+        
+        MY_RESET_OUT    : out std_logic;
+        -- gbt swt        
+        MGT_RX_SWT_P    : in  std_logic;
+        MGT_RX_SWT_N    : in  std_logic;
+        MGT_TX_SWT_P    : out std_logic;
+        MGT_TX_SWT_N    : out std_logic;
+        
+        TX2Data          : in  std_logic_vector (79 downto 0);
+        TX2Data_SC       : in  std_logic_vector (3 downto 0);
+        IsTX2Data        : in  std_logic; 
+        TX2Data_WB       : in  std_logic_vector (31 downto 0);
+
+        RX2Data          : out std_logic_vector (79 downto 0);
+        RX2Data_SC       : out std_logic_vector (3 downto 0);
+        RX2Data_WB       : out std_logic_vector (31 downto 0);
+        IsRX2Data        : out std_logic;
+        RX2DataClk       : out std_logic; 
+        GBT_Status_SWT_O    : out gbt_swt_status_t;
+        MY_RESET_SWT_OUT    : out std_logic
+        
         );
 end GBT_TX_RX;
 
@@ -116,18 +137,18 @@ architecture structural of GBT_TX_RX is
   signal mgt_outclkfabric : std_logic_vector(1 to GBT_BANKS_USER_SETUP(1).NUM_LINKS);
   signal header_flag      : std_logic_vector(1 to GBT_BANKS_USER_SETUP(1).NUM_LINKS);
   
-  signal gbtRx_ErrorDet_ff, Rx_Ready_ff  : std_logic;
+  signal gbtRx_ErrorDet_ff, Rx_Ready_ff, gbtRx_ErrorDet_ff2, Rx_Ready_ff2  : std_logic;
   signal gbt_not_ready                   : std_logic;
   signal gbt_ready_cnt                   : std_logic_vector(27 downto 0);
   
   signal prbs_txForceErr_ff, prbs_txForceErr_cmd : std_logic;
-  signal prbs_rxSel_rxclk        : std_logic_vector(2 downto 0);
-  signal reset_rx_errors_rxclk   : std_logic;
-  signal prbs_rxErrCounter       : std_logic_vector(15 downto 0);
-  signal prbs_rxErrCounter_txclk : std_logic_vector(15 downto 0);
+  signal prbs_rxSel_rxclk, prbs_rxSel_rxclk_2        : std_logic_vector(2 downto 0);
+  signal reset_rx_errors_rxclk, reset_rx_errors_rxclk_2   : std_logic;
+  signal prbs_rxErrCounter, prbs_rxErrCounter_2       : std_logic_vector(15 downto 0);
+  signal prbs_rxErrCounter_txclk, prbs_rxErrCounter_txclk_2 : std_logic_vector(15 downto 0);
   
   attribute keep of prbs_rxSel_rxclk : signal is "true";
-  attribute keep of reset_rx_errors_rxclk : signal is "true";
+  attribute keep of reset_rx_errors_rxclk, reset_rx_errors_rxclk_2 : signal is "true";
 
   -- attribute mark_debug : string;
   -- attribute mark_debug of gbt_not_ready        : signal is "true";
@@ -287,6 +308,7 @@ begin  --========####   Architecture Body   ####========--
 
   MGT_TX_P <= from_gbtBank_mgt.mgtLink(1).tx_p;
   MGT_TX_N <= from_gbtBank_mgt.mgtLink(1).tx_n;
+  MY_RESET_OUT <=from_gbtBank_mgt.mgtLink(1).ready;
 
   to_gbtBank_mgt.mgtLink(1).tx_reset <= mgtTxReset_from_gbtBank_gbtBankRst(1);
   to_gbtBank_mgt.mgtLink(1).rx_reset <= mgtRxReset_from_gbtBank_gbtBankRst(1);
@@ -408,14 +430,180 @@ begin  --========####   Architecture Body   ####========--
   end process;
 
 
+  --================================ gbt swt ================================--
 
+   gbtBank_rxFrmClkPhAlgnr_SWT : entity work.gbt_rx_frameclk_phalgnr
+        generic map(
+            TX_OPTIMIZATION => GBT_BANKS_USER_SETUP(1).TX_OPTIMIZATION,
+            RX_OPTIMIZATION => GBT_BANKS_USER_SETUP(1).RX_OPTIMIZATION,
+            WORDCLK_FREQ => 120,
+            SHIFT_CNTER  => 280,  
+            REF_MATCHING => (4, 6)
+        )
+        port map (
+            RESET_I => gbtRxReset_from_gbtBank_gbtBankRst(2),
+            RX_WORDCLK_I  => from_gbtBank_clks.mgt_clks.rx_wordClk(2),
+            FRAMECLK_I    => TXDataClk,
+            RX_FRAMECLK_O => rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2),
+            SYNC_I => header_flag(2),
+            PLL_LOCKED_O => pllLocked_from_gbtBank_rxFrmClkPhAlgnr(2),
+            DONE_O       => phaseAlignDone_from_gbtBank_rxFrmClkPhAlgnr(2)
+        );
+        
+        latOptGbtBank_rx(2) <= from_gbtBank_gbtRx(2).latOptGbtBank_rx;
+        rxWordClkReady(2)   <= from_gbtBank_mgt.mgtLink(2).rxWordClkReady;
+        header_flag(2)      <= from_gbtBank_gbtRx(2).header_flag;
+        mgt_cpllLock(2)     <= from_gbtBank_mgt.mgtLink(2).cpllLock;
+        
+        RX2DataClk           <= rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2); 
+        mgt_outclkfabric(2) <= from_gbtBank_clks.mgt_clks.tx_outclkfabric(2);
+        
+        to_gbtBank_clks.tx_frameClk(2) <= TXDataClk;
+        to_gbtBank_clks.rx_frameClk(2) <= rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2);
+        
+        gbtBank_rxFrameClkReady_staticMux(2) <= phaseAlignDone_from_gbtBank_rxFrmClkPhAlgnr(2) when GBT_BANKS_USER_SETUP(1).RX_OPTIMIZATION = LATENCY_OPTIMIZED else
+                                                pllLocked_from_gbtBank_rxFrmClkPhAlgnr(2);
+        
 
+--------------------------------------------------------------------------------------------------------------
+  gbtBank_gbtBankRs_2t : entity work.gbt_bank_reset
+    generic map (
+      RX_INIT_FIRST => false,
+      INITIAL_DELAY => 1 * 40e6,       
+      TIME_N        => 1 * 40e5,        
+      GAP_DELAY     => 1 * 40e6)        
+    port map (
+      CLK_I             => TXDataClk, 
+      GENERAL_RESET_I   => RESET,
+      MANUAL_RESET_TX_I => '0',
+      MANUAL_RESET_RX_I => '0',
+      MGT_TX_RESET_O    => mgtTxReset_from_gbtBank_gbtBankRst(2),
+      MGT_RX_RESET_O    => mgtRxReset_from_gbtBank_gbtBankRst(2),
+      GBT_TX_RESET_O    => gbtTxReset_from_gbtBank_gbtBankRst(2),
+      GBT_RX_RESET_O    => gbtRxReset_from_gbtBank_gbtBankRst(2),
+      BUSY_O            => open,
+      DONE_O            => open
+      );
 
+    --============--
+    -- GBT SWT Tx     --
+    --============--
+    to_gbtBank_gbtTx(2).reset             <= gbtTxReset_from_gbtBank_gbtBankRst(2);
+   
+    --============--
+    -- GBT SWT Rx     --
+    --============--
+    
+    to_gbtBank_gbtRx(2).reset           <= gbtRxReset_from_gbtBank_gbtBankRst(2);
+    to_gbtBank_gbtRx(2).rxFrameClkReady <= gbtBank_rxFrameClkReady_staticMux(2);
+        
+    RX2Data    <= from_gbtBank_gbtRx(2).data(79 downto 0);  
+    RX2Data_SC <= from_gbtBank_gbtRx(2).data(83 downto 80); 
+    RX2Data_WB <= from_gbtBank_gbtRx(2).extraData_wideBus; 
+    IsRX2Data  <= from_gbtBank_gbtRx(2).isDataFlag;  
+    
+--------------------------------------------------------------------------------------------------------------
+    to_gbtBank_mgt.mgtLink(2).drp_addr <= "000000000";
+    to_gbtBank_mgt.mgtLink(2).drp_en   <= '0';
+    to_gbtBank_mgt.mgtLink(2).drp_di   <= x"0000";
+    to_gbtBank_mgt.mgtLink(2).drp_we   <= '0';
+    
+    to_gbtBank_mgt.mgtLink(2).prbs_txSel      <= prbs_txSel;
+    to_gbtBank_mgt.mgtLink(2).prbs_rxSel      <= prbs_rxSel_rxclk;
+    to_gbtBank_mgt.mgtLink(2).prbs_txForceErr <= prbs_txForceErr_cmd;
+    to_gbtBank_mgt.mgtLink(2).prbs_rxCntReset <= reset_rx_errors_rxclk;
+    
+    to_gbtBank_mgt.mgtLink(2).conf_diffCtrl   <= "1000";   
+    to_gbtBank_mgt.mgtLink(2).conf_postCursor <= "00000";
+    to_gbtBank_mgt.mgtLink(2).conf_preCursor  <= "00000";
+    to_gbtBank_mgt.mgtLink(2).conf_txPol      <= '0';
+    to_gbtBank_mgt.mgtLink(2).conf_rxPol      <= '0';
+    
+    to_gbtBank_mgt.mgtLink(2).rxBitSlip_enable   <= '1';
+    to_gbtBank_mgt.mgtLink(2).rxBitSlip_ctrl     <= '0';
+    to_gbtBank_mgt.mgtLink(2).rxBitSlip_nbr      <= "000000";
+    to_gbtBank_mgt.mgtLink(2).rxBitSlip_run      <= '0';
+    to_gbtBank_mgt.mgtLink(2).rxBitSlip_oddRstEn <= '0';
+    
+    to_gbtBank_mgt.mgtLink(2).loopBack <= "000";
+    
+    to_gbtBank_mgt.mgtLink(2).rx_p <= MGT_RX_SWT_P;
+    to_gbtBank_mgt.mgtLink(2).rx_n <= MGT_RX_SWT_N;
+    
+    MGT_TX_SWT_P <= from_gbtBank_mgt.mgtLink(2).tx_p;
+    MGT_TX_SWT_N <= from_gbtBank_mgt.mgtLink(2).tx_n;
+    MY_RESET_SWT_OUT <=from_gbtBank_mgt.mgtLink(2).ready; 
+    
+    to_gbtBank_mgt.mgtLink(2).tx_reset <= mgtTxReset_from_gbtBank_gbtBankRst(2);
+    to_gbtBank_mgt.mgtLink(2).rx_reset <= mgtRxReset_from_gbtBank_gbtBankRst(2);
+    
+--------------------------------------------------------------------------------------------------------------
+process(rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2))
+begin
+  if rising_edge(rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2)) then
+    prbs_rxSel_rxclk_2      <= prbs_rxSel;
+    reset_rx_errors_rxclk_2 <= reset_rx_errors;
 
+    if reset_rx_errors_rxclk_2 = '1' then
+      prbs_rxErrCounter_2 <= (others => '0');
+    elsif from_gbtBank_mgt.mgtLink(2).prbs_rxErr = '1' and prbs_rxErrCounter_2 /= x"FFFF" then
+      prbs_rxErrCounter_2 <= prbs_rxErrCounter_2 + 1;
+    end if;
+  end if;
+end process;
 
+--------------------------------------------------------------------------------------------------------------
+process(TXDataClk)
+begin
+  if rising_edge(TXDataClk) then
+    
+    -- RXTX loopback link test mode (LINK 2)
+    if rxtx_loopback = '0' then
+      to_gbtBank_gbtTx(2).isDataSel         <= IsTX2Data;                     
+      to_gbtBank_gbtTx(2).data              <= TX2Data_SC & TX2Data;          
+      to_gbtBank_gbtTx(2).extraData_wideBus <= TX2Data_WB;            
+    else
+      to_gbtBank_gbtTx(2).isDataSel         <= IsRXData_lb_txclk;            -- ??? ????????? lb ??? link2 -- IsRXData_lb_txclk_2
+      to_gbtBank_gbtTx(2).data              <= RXData_SC_lb_txclk & RXData_lb_txclk;
+      to_gbtBank_gbtTx(2).extraData_wideBus <= RXData_WB_lb_txclk;
+    end if;
+    
+    -- ?????? ???????? RX ??? LINK 2
+    gbtRx_ErrorDet_ff2        <= from_gbtBank_gbtRx(2).rxErrorDetected;
+    Rx_Ready_ff2              <= from_gbtBank_gbtRx(2).ready;
+    prbs_rxErrCounter_txclk_2 <= prbs_rxErrCounter_2;
 
+    -- ?????????? ??????? (????? ????????? gbt_status_t ??? ?????????? ???? LINK 2)
+    GBT_Status_SWT_O.gbtRx_ErrorDet_2      <= gbtRx_ErrorDet_ff2;
+    GBT_Status_SWT_O.mgt_phalin_cplllock_2 <= pllLocked_from_gbtBank_rxFrmClkPhAlgnr(2);
+    GBT_Status_SWT_O.rxWordClkReady_2      <= from_gbtBank_mgt.mgtLink(2).rxWordClkReady;
+    GBT_Status_SWT_O.rxFrameClkReady_2     <= phaseAlignDone_from_gbtBank_rxFrmClkPhAlgnr(2);
+    GBT_Status_SWT_O.mgtLinkReady_2        <= from_gbtBank_mgt.mgtLink(2).ready;
+    GBT_Status_SWT_O.tx_resetDone_2        <= from_gbtBank_mgt.mgtLink(2).tx_resetDone;
+    GBT_Status_SWT_O.tx_fsmResetDone_2     <= from_gbtBank_mgt.mgtLink(2).tx_fsmResetDone;
+    GBT_Status_SWT_O.gbtRx_Ready_2         <= Rx_Ready_ff2;
+    GBT_Status_SWT_O.prbs_rxErrCnt_2       <= prbs_rxErrCounter_txclk_2;
 
+    -- PRBS TX force error ??? ?????? ?????
+    prbs_txForceErr_ff <= prbs_txForceErr;
+    if prbs_txForceErr = '1' and prbs_txForceErr_ff = '0' then
+      prbs_txForceErr_cmd <= '1';
+    else
+      prbs_txForceErr_cmd <= '0';
+    end if;
 
+    -- rx_err_det reset done by command, gbt_reset, after each gbt sync procedure
+    if reset_rx_errors = '1' or RESET = '1' or gbt_not_ready = '1' then 
+      GBT_Status_SWT_O.gbtRx_ErrorLatch_2 <= '0';
+    elsif gbtRx_ErrorDet_ff2 = '1' then 
+      GBT_Status_SWT_O.gbtRx_ErrorLatch_2 <= '1'; 
+    end if;
 
+    -- rx_ready cleared by command or gbt_reset only
+    if reset_rx_errors = '1' or RESET = '1' then 
+      GBT_Status_SWT_O.gbt_was_ready_2 <= '1'; 
+    end if;
+  end if;
+end process;
 
 end structural;

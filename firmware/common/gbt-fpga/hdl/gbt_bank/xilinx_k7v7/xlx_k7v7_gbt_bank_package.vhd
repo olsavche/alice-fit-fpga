@@ -72,7 +72,7 @@ package vendor_specific_gbt_bank_package is
    --=================================== GBT Bank setup ==================================--
    --/*/--
    --constant MAX_NUM_GBT_LINK                    : integer :=  4;
-   constant MAX_NUM_GBT_LINK                    : integer :=  1; --new
+   constant MAX_NUM_GBT_LINK                    : integer :=  2; --new
    constant WORD_WIDTH                          : integer := 40; 
    constant WORD_ADDR_MSB                       : integer :=  4;
    constant WORD_ADDR_PS_CHECK_MSB              : integer :=  1;

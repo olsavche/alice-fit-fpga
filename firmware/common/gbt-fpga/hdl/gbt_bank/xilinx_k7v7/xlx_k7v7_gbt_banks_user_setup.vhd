@@ -92,7 +92,7 @@ package gbt_banks_user_setup is
       -- GBT Bank 1:
       --------------     
       
-      1 => (NUM_LINKS                           => 1,                   -- Comment: * 1 to 4                
+      1 => (NUM_LINKS                           => 2,                   -- Comment: * 1 to 4                
             ------------------------------------
             TX_OPTIMIZATION                     => STANDARD,            --          * (STANDARD or LATENCY_OPTIMIZED)
             --/*/--

@@ -548,6 +548,9 @@ set_property PACKAGE_PIN H5 [get_ports MGTCLK_N]
 set_property PACKAGE_PIN R3 [get_ports GBT_RX_N]
 set_property PACKAGE_PIN R4 [get_ports GBT_RX_P]
 
+set_property PACKAGE_PIN N3 [get_ports GBT_RX_SWT_N]
+set_property PACKAGE_PIN N4 [get_ports GBT_RX_SWT_P]
+
 
 set_property PACKAGE_PIN AF10 [get_ports LAS_P]
 set_property PACKAGE_PIN AF9 [get_ports LAS_N]

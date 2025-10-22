@@ -157,7 +157,13 @@ entity tcm is
 
       -- PHY control signals
       phy_reset_o  : out std_logic; -- Hardware chip reset
-      phy_sreset_o : out std_logic  -- Software reset
+      phy_sreset_o : out std_logic;  -- Software reset
+      
+      -- gbt swt
+      GBT_RX_SWT_P : in  STD_LOGIC;
+      GBT_RX_SWT_N : in  STD_LOGIC;
+      GBT_TX_SWT_P : out  STD_LOGIC;
+      GBT_TX_SWT_N : out  STD_LOGIC
     );
 end tcm;
 
@@ -402,6 +408,12 @@ end component;
            MGT_TX_P_O         : out  STD_LOGIC;
            MGT_TX_N_O        : out  STD_LOGIC;
            MGT_TX_dsbl_O     : out  STD_LOGIC;
+           
+           -- gbt swt
+           MGT_RX_SWT_P_I    : in  std_logic;
+           MGT_RX_SWT_N_I    : in  std_logic;
+           MGT_TX_SWT_P_O    : out std_logic;
+           MGT_TX_SWT_N_O    : out std_logic;
            
            -- GBT data to/from FIT readout 
            RxData_rxclk_to_FITrd_I     : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
@@ -801,6 +813,12 @@ FitGbtPrg: FIT_GBT_project
 		MGT_TX_P_O			=>	GBT_TX_P,
 		MGT_TX_N_O			=>	GBT_TX_N,
 		MGT_TX_dsbl_O		=>	open,
+		
+		-- gbt swt
+		MGT_RX_SWT_P_I		=>	GBT_RX_SWT_P,
+		MGT_RX_SWT_N_I		=>	GBT_RX_SWT_N,
+		MGT_TX_SWT_P_O		=>	GBT_TX_SWT_P,
+		MGT_TX_SWT_N_O		=>	GBT_TX_SWT_N,
 		
 		RxData_rxclk_to_FITrd_I 	=> RxData_rxclk_from_GBT, --loop back data
 		IsRxData_rxclk_to_FITrd_I	=> IsRxData_rxclk_from_GBT, --loop back data

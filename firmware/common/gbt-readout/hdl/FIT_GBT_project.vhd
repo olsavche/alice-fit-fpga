@@ -41,6 +41,12 @@ entity FIT_GBT_project is
     MGT_TX_P_O    : out std_logic;
     MGT_TX_N_O    : out std_logic;
     MGT_TX_dsbl_O : out std_logic;
+    
+    --gbt swt
+    MGT_RX_SWT_P_I    : in  std_logic;
+    MGT_RX_SWT_N_I    : in  std_logic;
+    MGT_TX_SWT_P_O    : out std_logic;
+    MGT_TX_SWT_N_O    : out std_logic;
 
     -- GBT data to/from FIT readout 
     RxData_rxclk_to_FITrd_I   : in  std_logic_vector(GBT_data_word_bitdepth-1 downto 0);
@@ -468,6 +474,11 @@ begin
         MGT_RX_N        => MGT_RX_N_I,
         MGT_TX_P        => MGT_TX_P_O,
         MGT_TX_N        => MGT_TX_N_O,
+        -- gbt swt
+        MGT_RX_SWT_P        => MGT_RX_SWT_P_I,
+        MGT_RX_SWT_N        => MGT_RX_SWT_N_I,
+        MGT_TX_SWT_P        => MGT_TX_SWT_P_O,
+        MGT_TX_SWT_N        => MGT_TX_SWT_N_O,  
         TXDataClk       => DataClk_I,
         TXData          => Data_to_GBT_I,
         TXData_SC       => x"0",
@@ -490,7 +501,22 @@ begin
         prbs_rxSel      => Control_register_I.prbs_rxSel,
         prbs_txForceErr => Control_register_I.prbs_txForceErr,
         rxtx_loopback   => Control_register_I.rxtx_data_loopback,
-        GBT_Status_O    => from_gbt_bank_prj_GBT_status
+        GBT_Status_O    => from_gbt_bank_prj_GBT_status,
+        
+        -- gbt swt 
+        TX2Data         => (others => '0'),
+        TX2Data_SC      => (others => '0'),
+        IsTX2Data       => '0', 
+        TX2Data_WB      => (others => '0'),--open;
+        
+        RX2Data          => open,
+        RX2Data_SC       => open,
+        RX2Data_WB       => open,
+        IsRX2Data        => open,
+        RX2DataClk       => open,
+        
+        GBT_Status_SWT_O    => open,
+        MY_RESET_SWT_OUT    => open
         );
   end generate gbt_bank_gen;
 

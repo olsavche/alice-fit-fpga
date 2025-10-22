@@ -224,6 +224,21 @@ package fit_gbt_common_package is
     gbt_was_ready       : std_logic;    --reg bit 6
 	prbs_rxErrCnt       : std_logic_vector(15 downto 0);
   end record;
+  
+  type gbt_swt_status_t is record
+    mgt_phalin_cplllock_2 : std_logic;    --reg bit 0
+    rxWordClkReady_2      : std_logic;    --reg bit 1
+    rxFrameClkReady_2     : std_logic;    --reg bit 2
+    mgtLinkReady_2        : std_logic;    --reg bit 3
+    tx_resetDone_2        : std_logic;    --reg bit 4
+    tx_fsmResetDone_2     : std_logic;    --reg bit 5
+    gbtRx_Ready_2         : std_logic;
+    gbtRx_ErrorDet_2      : std_logic;    --reg bit 7
+    gbtRx_ErrorLatch_2    : std_logic;    --reg bit 8
+    gbt_not_ready_2       : std_logic;    --reg bit 9
+    gbt_was_ready_2       : std_logic;    --reg bit 6
+	prbs_rxErrCnt_2       : std_logic_vector(15 downto 0);
+  end record;
 
   type datagen_report_t is record
     orbit      : std_logic_vector(Orbit_id_bitdepth-1 downto 0);
