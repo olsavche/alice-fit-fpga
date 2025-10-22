@@ -72,6 +72,7 @@ entity GBT_TX_RX is
         TX2Data_SC       : in  std_logic_vector (3 downto 0);
         IsTX2Data        : in  std_logic; 
         TX2Data_WB       : in  std_logic_vector (31 downto 0);
+        TX2DataClk       : in  std_logic;
 
         RX2Data          : out std_logic_vector (79 downto 0);
         RX2Data_SC       : out std_logic_vector (3 downto 0);
@@ -443,7 +444,7 @@ begin  --========####   Architecture Body   ####========--
         port map (
             RESET_I => gbtRxReset_from_gbtBank_gbtBankRst(2),
             RX_WORDCLK_I  => from_gbtBank_clks.mgt_clks.rx_wordClk(2),
-            FRAMECLK_I    => TXDataClk,
+            FRAMECLK_I    => TX2DataClk,
             RX_FRAMECLK_O => rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2),
             SYNC_I => header_flag(2),
             PLL_LOCKED_O => pllLocked_from_gbtBank_rxFrmClkPhAlgnr(2),
@@ -458,7 +459,7 @@ begin  --========####   Architecture Body   ####========--
         RX2DataClk           <= rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2); 
         mgt_outclkfabric(2) <= from_gbtBank_clks.mgt_clks.tx_outclkfabric(2);
         
-        to_gbtBank_clks.tx_frameClk(2) <= TXDataClk;
+        to_gbtBank_clks.tx_frameClk(2) <= TX2DataClk;
         to_gbtBank_clks.rx_frameClk(2) <= rxFrameClk_from_gbtBank_rxFrmClkPhAlgnr(2);
         
         gbtBank_rxFrameClkReady_staticMux(2) <= phaseAlignDone_from_gbtBank_rxFrmClkPhAlgnr(2) when GBT_BANKS_USER_SETUP(1).RX_OPTIMIZATION = LATENCY_OPTIMIZED else
@@ -473,7 +474,7 @@ begin  --========####   Architecture Body   ####========--
       TIME_N        => 1 * 40e5,        
       GAP_DELAY     => 1 * 40e6)        
     port map (
-      CLK_I             => TXDataClk, 
+      CLK_I             => TX2DataClk, 
       GENERAL_RESET_I   => RESET,
       MANUAL_RESET_TX_I => '0',
       MANUAL_RESET_RX_I => '0',
@@ -509,7 +510,7 @@ begin  --========####   Architecture Body   ####========--
     to_gbtBank_mgt.mgtLink(2).drp_we   <= '0';
     
     to_gbtBank_mgt.mgtLink(2).prbs_txSel      <= prbs_txSel;
-    to_gbtBank_mgt.mgtLink(2).prbs_rxSel      <= prbs_rxSel_rxclk;
+    to_gbtBank_mgt.mgtLink(2).prbs_rxSel      <= prbs_rxSel_rxclk_2;
     to_gbtBank_mgt.mgtLink(2).prbs_txForceErr <= prbs_txForceErr_cmd;
     to_gbtBank_mgt.mgtLink(2).prbs_rxCntReset <= reset_rx_errors_rxclk;
     
@@ -553,9 +554,9 @@ begin
 end process;
 
 --------------------------------------------------------------------------------------------------------------
-process(TXDataClk)
+process(TX2DataClk)
 begin
-  if rising_edge(TXDataClk) then
+  if rising_edge(TX2DataClk) then
     
     -- RXTX loopback link test mode (LINK 2)
     if rxtx_loopback = '0' then
@@ -573,7 +574,6 @@ begin
     Rx_Ready_ff2              <= from_gbtBank_gbtRx(2).ready;
     prbs_rxErrCounter_txclk_2 <= prbs_rxErrCounter_2;
 
-    -- ?????????? ??????? (????? ????????? gbt_status_t ??? ?????????? ???? LINK 2)
     GBT_Status_SWT_O.gbtRx_ErrorDet_2      <= gbtRx_ErrorDet_ff2;
     GBT_Status_SWT_O.mgt_phalin_cplllock_2 <= pllLocked_from_gbtBank_rxFrmClkPhAlgnr(2);
     GBT_Status_SWT_O.rxWordClkReady_2      <= from_gbtBank_mgt.mgtLink(2).rxWordClkReady;
@@ -585,12 +585,12 @@ begin
     GBT_Status_SWT_O.prbs_rxErrCnt_2       <= prbs_rxErrCounter_txclk_2;
 
     -- PRBS TX force error ??? ?????? ?????
-    prbs_txForceErr_ff <= prbs_txForceErr;
-    if prbs_txForceErr = '1' and prbs_txForceErr_ff = '0' then
-      prbs_txForceErr_cmd <= '1';
-    else
-      prbs_txForceErr_cmd <= '0';
-    end if;
+--    prbs_txForceErr_ff <= prbs_txForceErr;
+--    if prbs_txForceErr = '1' and prbs_txForceErr_ff = '0' then
+--      prbs_txForceErr_cmd <= '1';
+--    else
+--      prbs_txForceErr_cmd <= '0';
+--    end if;
 
     -- rx_err_det reset done by command, gbt_reset, after each gbt sync procedure
     if reset_rx_errors = '1' or RESET = '1' or gbt_not_ready = '1' then 

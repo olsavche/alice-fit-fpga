@@ -235,6 +235,13 @@ set files [list \
  [file normalize "${origin_dir}/../../common/gbt-readout/hdl/CRU_packet_Builder.vhd" ]\
  [file normalize "${origin_dir}/../../common/gbt-readout/hdl/snapshot_fifo.vhd" ]\
  [file normalize "${origin_dir}/../../common/gbt-readout/hdl/error_report.vhd" ]\
+ [file normalize "${origin_dir}/converter/cdc_xpm_fifo_async.vhd" ]\
+ [file normalize "${origin_dir}/converter/strobe_ack_watchdog.vhd" ]\
+ [file normalize "${origin_dir}/converter/converter_top.vhd" ]\
+ [file normalize "${origin_dir}/converter/converter_fsm.vhd" ]\
+ [file normalize "${origin_dir}/converter/send_swt.vhd" ]\
+ [file normalize "${origin_dir}/converter/receive_swt.vhd" ]\
+ [file normalize "${origin_dir}/converter/mux.vhd" ]\
 ]
 #set imported_files [import_files -fileset sources_1 $files]
 add_files -norecurse -fileset sources_1 $files

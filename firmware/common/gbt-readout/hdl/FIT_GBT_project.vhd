@@ -65,7 +65,13 @@ entity FIT_GBT_project is
     IsRxData_rxclk_from_GBT_O : out std_logic;
 
     -- FIT readour status, including BCOR_ID to PM/TCM
-    readout_status_o : out readout_status_t
+    readout_status_o : out readout_status_t;
+    
+    -- gbt swt
+    RX_gbt_swt         : out std_logic_vector (79 downto 0);
+    TX_gbt_swt         : in  std_logic_vector (79 downto 0);
+    RX_gbt_swt_clk     : out std_logic;
+    TX_gbt_swt_clk     : in std_logic
     );
 end FIT_GBT_project;
 
@@ -504,16 +510,17 @@ begin
         GBT_Status_O    => from_gbt_bank_prj_GBT_status,
         
         -- gbt swt 
-        TX2Data         => (others => '0'),
+        TX2Data         => TX_gbt_swt,
         TX2Data_SC      => (others => '0'),
         IsTX2Data       => '0', 
-        TX2Data_WB      => (others => '0'),--open;
+        TX2Data_WB      => (others => '0'),
+        TX2DataClk      => TX_gbt_swt_clk,
         
-        RX2Data          => open,
+        RX2Data          => RX_gbt_swt,
         RX2Data_SC       => open,
         RX2Data_WB       => open,
         IsRX2Data        => open,
-        RX2DataClk       => open,
+        RX2DataClk       => RX_gbt_swt_clk,
         
         GBT_Status_SWT_O    => open,
         MY_RESET_SWT_OUT    => open
