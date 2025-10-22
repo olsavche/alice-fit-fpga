@@ -614,6 +614,7 @@ signal conv_rbus_over_ack  : std_logic;
 signal conv_rbus_over_rdat : std_logic_vector(31 downto 0);
 signal    RX_gbt_swt_clk     :  std_logic;
 signal    TX_gbt_swt_clk     :  std_logic;
+signal RX_gbt_swt_clk_ila : std_logic_vector(0 downto 0);
 -- 102
 signal my_register_102 : std_logic_vector(31 downto 0) := x"00000001";
 --signal my_register_102_select : std_logic;
@@ -622,7 +623,27 @@ signal reg102_cmd6_pulse : std_logic := '0';
 attribute keep : string;
 attribute keep of reg102_cmd4_pulse : signal is "true";
 attribute keep of reg102_cmd6_pulse : signal is "true";
+
+COMPONENT ila_0
+
+PORT (
+	clk : IN STD_LOGIC;
+	probe0 : IN STD_LOGIC_VECTOR(79 DOWNTO 0);
+	probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+);
+END COMPONENT;
 begin
+
+RX_gbt_swt_clk_ila(0) <=  RX_gbt_swt_clk;
+
+your_instance_name : ila_0
+PORT MAP (
+	clk => CLK320A,
+	probe0 => gbt_data_rx,
+	probe1 => RX_gbt_swt_clk_ila
+);
+
+
 
 my_converter_top: entity work.converter_top
     port map (
