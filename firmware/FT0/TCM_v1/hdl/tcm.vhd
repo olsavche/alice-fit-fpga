@@ -650,7 +650,7 @@ my_converter_top: entity work.converter_top
         i_rst          => MY_RESET_OUT_N, 
         i_ipb_clock    => ipb_clk, 
         i_gbt_rx_clock => RX_gbt_swt_clk,--RX_CLK, 
-        i_gbt_tx_clock => TX_gbt_swt_clk,--TX_CLK, 
+        i_gbt_tx_clock => TX_CLK,--TX_CLK, 
         i_gbt_data     => gbt_data_rx, 
         o_gbt_data     => o_swt_TX,
         i_ipb_ack   => conv_rbus.ipb_ack,

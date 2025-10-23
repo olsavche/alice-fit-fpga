@@ -514,7 +514,7 @@ begin
         TX2Data_SC      => (others => '0'),
         IsTX2Data       => '0', 
         TX2Data_WB      => (others => '0'),
-        TX2DataClk      => TX_gbt_swt_clk,
+        TX2DataClk      => DataClk_I,
         
         RX2Data          => RX_gbt_swt,
         RX2Data_SC       => open,
