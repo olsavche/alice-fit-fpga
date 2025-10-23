@@ -624,6 +624,11 @@ attribute keep : string;
 attribute keep of reg102_cmd4_pulse : signal is "true";
 attribute keep of reg102_cmd6_pulse : signal is "true";
 
+signal reg_110, reg_111, reg_112 : std_logic_vector(31 downto 0) := (others => '0');
+signal reg110_sel, reg111_sel, reg112_sel : std_logic;
+signal reg_112_q    : std_logic_vector(31 downto 0) := x"A11CEF17";
+
+
 COMPONENT ila_0
 
 PORT (
@@ -635,6 +640,7 @@ END COMPONENT;
 begin
 
 RX_gbt_swt_clk_ila(0) <=  RX_gbt_swt_clk;
+reg_112 <= reg_112_q;
 
 your_instance_name : ila_0
 PORT MAP (
@@ -1253,6 +1259,9 @@ bc_mask_sel <= ipb_str when (ipb_addr(31 downto 8)= x"00002A") else '0';
 bccorr_sel<= ipb_str when (ipb_addr(31 downto 12)= x"00003") and (ipb_isrd='1') else '0';
 bccorrA_sel<= ipb_str when (ipb_addr(31 downto 12)= x"00004") and (ipb_isrd='1') else '0';
 bccorrC_sel<= ipb_str when (ipb_addr(31 downto 12)= x"00005") and (ipb_isrd='1') else '0';
+reg110_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000110") else '0';
+reg111_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000111") else '0';
+reg112_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000112") and (ipb_isrd='1') else '0';
 
 PM_sel: for i in 0 to 19 generate
 pm_select(i)<= (pm_adr_sel and pm_ena(i) and (not inRst)) when (ipb_addr(13 downto 9)= i+1) else '0';  
@@ -1295,6 +1304,9 @@ else '1' when (fifo_sel or fifo_csel or lmode_sel or lpatt0_sel or lpatt1_sel or
 else d_rdy when (adc_sel='1')
 else bccorr_ack when (bccorr_rd='1')
 else '1' when (ipb_wr='1') and (bc_mask_sel='1')
+else '1' when (reg110_sel='1') 
+else '1' when (reg111_sel='1')
+else '1' when (reg112_sel='1')
 else '0';
 
 ipb_in.ipb_err<= tcmx_err when (tcmx_select='1') 
@@ -1331,6 +1343,9 @@ else bc_maskO when (bc_mask_sel='1') and (ipb_isrd='1')
 else bc_corrl when (bccorr_sel='1')
 else bc_corrA when (bccorrA_sel='1')
 else bc_corrC when (bccorrC_sel='1')
+else reg_110 when (reg110_sel='1') and (ipb_isrd='1')
+else reg_111 when (reg111_sel='1') and (ipb_isrd='1')
+else reg_112 when (reg112_sel='1') and (ipb_isrd='1')
 else (others =>'0'); 
 
 with ipb_addr(2 downto 0) select 
@@ -1601,6 +1616,8 @@ end if;
 if (lpatt0_sel='1') and (ipb_iswr='1') then l_patt0<=ipb_data_out(31 downto 0); end if;
 if (lpatt1_sel='1') and (ipb_iswr='1') then l_patt1<=ipb_data_out(31 downto 0); end if;
 if (pmena_sel='1') and (ipb_iswr='1') then pm_ena<=ipb_data_out(19 downto 0); end if;
+if (reg110_sel = '1') and (ipb_iswr = '1') then reg_110 <= ipb_data_out; end if;
+if (reg111_sel = '1') and (ipb_iswr = '1') then reg_111 <= ipb_data_out; end if;
 
 if (rdoutc_sel='1') and (ipb_iswr='1') then
   if  (ipb_addr(7 downto 0)=16#D8#) then readout_control_reg(0)<= ipb_data_out;
