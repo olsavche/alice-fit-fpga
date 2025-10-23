@@ -434,7 +434,8 @@ end component;
            RX_gbt_swt         : out std_logic_vector (79 downto 0);
            TX_gbt_swt         : in  std_logic_vector (79 downto 0);
            RX_gbt_swt_clk     : out std_logic;
-           TX_gbt_swt_clk     : in std_logic
+           TX_gbt_swt_clk     : in std_logic;
+           GBT_Status_SWT_O   : out gbt_swt_status_t
        );
    end component;
    -- ###############################################
@@ -627,18 +628,20 @@ attribute keep of reg102_cmd6_pulse : signal is "true";
 signal reg_110, reg_111, reg_112 : std_logic_vector(31 downto 0) := (others => '0');
 signal reg110_sel, reg111_sel, reg112_sel : std_logic;
 signal reg_112_q    : std_logic_vector(31 downto 0) := x"A11CEF17";
-
-
-COMPONENT ila_0
+signal GBT_Status_SWT_O : gbt_swt_status_t;
+signal Swt_Rx_ErrorDet  : std_logic_vector(0 downto 0);
+COMPONENT ila_0 
 
 PORT (
 	clk : IN STD_LOGIC;
 	probe0 : IN STD_LOGIC_VECTOR(79 DOWNTO 0);
-	probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+	probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+	probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
 );
 END COMPONENT;
 begin
 
+Swt_Rx_ErrorDet(0) <= GBT_Status_SWT_O.gbtRx_ErrorDet_2;
 RX_gbt_swt_clk_ila(0) <=  RX_gbt_swt_clk;
 reg_112 <= reg_112_q;
 
@@ -646,10 +649,9 @@ your_instance_name : ila_0
 PORT MAP (
 	clk => CLK320A,
 	probe0 => gbt_data_rx,
-	probe1 => RX_gbt_swt_clk_ila
+	probe1 => RX_gbt_swt_clk_ila,
+	probe2 => Swt_Rx_ErrorDet
 );
-
-
 
 my_converter_top: entity work.converter_top
     port map (
@@ -1068,7 +1070,8 @@ FitGbtPrg: FIT_GBT_project
         RX_gbt_swt  => gbt_data_rx,
         TX_gbt_swt  => o_swt_TX,
         RX_gbt_swt_clk  => RX_gbt_swt_clk,
-        TX_gbt_swt_clk  => TX_gbt_swt_clk
+        TX_gbt_swt_clk  => TX_gbt_swt_clk,
+        GBT_Status_SWT_O => GBT_Status_SWT_O
         
 		);		
 -- =====================================================
