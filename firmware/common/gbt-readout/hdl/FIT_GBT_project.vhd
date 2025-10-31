@@ -72,6 +72,7 @@ entity FIT_GBT_project is
     TX_gbt_swt         : in  std_logic_vector (79 downto 0);
     RX_gbt_swt_clk     : out std_logic;
     TX_gbt_swt_clk     : in std_logic;
+    MY_RESET_SWT_OUT   : out std_logic;
     GBT_Status_SWT_O   : out gbt_swt_status_t
     );
 end FIT_GBT_project;
@@ -524,7 +525,7 @@ begin
         RX2DataClk       => RX_gbt_swt_clk,
         
         GBT_Status_SWT_O    => GBT_Status_SWT_O,
-        MY_RESET_SWT_OUT    => open
+        MY_RESET_SWT_OUT    => MY_RESET_SWT_OUT
         );
   end generate gbt_bank_gen;
 

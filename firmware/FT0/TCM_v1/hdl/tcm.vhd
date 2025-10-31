@@ -435,6 +435,7 @@ end component;
            TX_gbt_swt         : in  std_logic_vector (79 downto 0);
            RX_gbt_swt_clk     : out std_logic;
            TX_gbt_swt_clk     : in std_logic;
+           MY_RESET_SWT_OUT   : out std_logic;
            GBT_Status_SWT_O   : out gbt_swt_status_t
        );
    end component;
@@ -625,18 +626,35 @@ attribute keep : string;
 attribute keep of reg102_cmd4_pulse : signal is "true";
 attribute keep of reg102_cmd6_pulse : signal is "true";
 
-signal reg_110, reg_111, reg_112 : std_logic_vector(31 downto 0) := (others => '0');
-signal reg110_sel, reg111_sel, reg112_sel : std_logic;
+signal reg_110, reg_111, reg_112, reg_114 : std_logic_vector(31 downto 0) := (others => '0');
+signal reg110_sel, reg111_sel, reg112_sel, reg114_sel : std_logic;
 signal reg_112_q    : std_logic_vector(31 downto 0) := x"A11CEF17";
 signal GBT_Status_SWT_O : gbt_swt_status_t;
 signal Swt_Rx_ErrorDet  : std_logic_vector(0 downto 0);
+signal MY_RESET_SWT_OUT : std_logic;
+
+signal reg113_sel       : std_logic;
+signal reg113_q         : std_logic_vector(31 downto 0) := (others=>'0');
+signal fifo_rdptr       : unsigned(3 downto 0) := (others=>'0'); 
+signal reg113_rd_pulse  : std_logic := '0'; 
+signal reg113_rd_req_d  : std_logic := '0';
+
+type fifo16_t is array (0 to 15) of std_logic_vector(31 downto 0);
+constant fifo_init : fifo16_t := (
+  x"00000001", x"00000002", x"00000003", x"00000004",
+  x"00000005", x"00000006", x"00000007", x"00000008",
+  x"00000009", x"0000000A", x"0000000B", x"0000000C",
+  x"0000000D", x"0000000E", x"0000000F", x"00000000"
+);
+
 COMPONENT ila_0 
 
 PORT (
 	clk : IN STD_LOGIC;
 	probe0 : IN STD_LOGIC_VECTOR(79 DOWNTO 0);
 	probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-	probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+	probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+	probe3 : IN STD_LOGIC_VECTOR(79 DOWNTO 0)
 );
 END COMPONENT;
 begin
@@ -644,14 +662,18 @@ begin
 Swt_Rx_ErrorDet(0) <= GBT_Status_SWT_O.gbtRx_ErrorDet_2;
 RX_gbt_swt_clk_ila(0) <=  RX_gbt_swt_clk;
 reg_112 <= reg_112_q;
+reg_114 <= (31 downto 4 => '0') & std_logic_vector(fifo_rdptr);
+MY_RESET_OUT_N <= not MY_RESET_SWT_OUT or sreset;
 
 your_instance_name : ila_0
 PORT MAP (
 	clk => CLK320A,
 	probe0 => gbt_data_rx,
 	probe1 => RX_gbt_swt_clk_ila,
-	probe2 => Swt_Rx_ErrorDet
+	probe2 => Swt_Rx_ErrorDet,
+	probe3 => o_swt_TX
 );
+
 
 my_converter_top: entity work.converter_top
     port map (
@@ -777,16 +799,16 @@ end process;
 ---------------------------------------------------------------------------------------
 -- write reg 102 
 ---------------------------------------------------------------------------------------
-process(ipb_clk)
-begin
-  if rising_edge(ipb_clk) then
-    if ipb_rst='1' then
-      my_register_102 <= (others=>'0');
-    else
-      null;
-    end if;
-  end if;
-end process;    
+--process(ipb_clk)
+--begin
+--  if rising_edge(ipb_clk) then
+--    if ipb_rst='1' then
+--      my_register_102 <= (others=>'0');
+--    else
+--      null;
+--    end if;
+--  end if;
+--end process;    
 
 my102_wr_kc    <= kc_wbus.ipb_write   and my102_req_kc;  
 my102_wr_conv  <= conv_wbus.ipb_write and my102_req_conv;
@@ -812,7 +834,52 @@ conv_rbus.ipb_rdata <= conv_rbus_over_rdat when conv_rbus_over_ack='1'  else con
 
 
 my_register_102(0) <= gbt_ipbus_sel(0);
-my_register_102(2) <= not GBTRX_ready;
+my_register_102(2) <= GBT_Status_SWT_O.gbtRx_Ready_2;
+--my_register_102(15) <= not GBTRX_ready;
+--my_register_102(16) <= GBTRX_ready;
+--my_register_102(17)<=rxerr0 or (not GBTRX_ready);
+--my_register_102(18)<=txled0 or (not GBTRX_ready);                                  
+--my_register_102(19)<=rxled0 or (not GBTRX_ready);
+
+--my_register_102(20)<=    GBT_Status_SWT_O.gbtRx_ErrorDet_2      ;
+--my_register_102(21)<=    GBT_Status_SWT_O.mgt_phalin_cplllock_2 ;
+--my_register_102(22)<=    GBT_Status_SWT_O.rxWordClkReady_2      ;
+--my_register_102(23)<=    GBT_Status_SWT_O.rxFrameClkReady_2     ;
+--my_register_102(24)<=    GBT_Status_SWT_O.mgtLinkReady_2        ;
+--my_register_102(25)<=    GBT_Status_SWT_O.tx_resetDone_2        ;
+--my_register_102(26)<=    GBT_Status_SWT_O.tx_fsmResetDone_2     ;
+--my_register_102(27)<=    GBT_Status_SWT_O.gbtRx_Ready_2;
+
+---------------------------------------------------------------------------------------
+-- fifo - 0x113
+---------------------------------------------------------------------------------------
+process(ipb_clk)
+begin
+  if rising_edge(ipb_clk) then
+    reg113_rd_pulse <= '0';
+    if ipb_rst = '1' then
+      reg113_rd_req_d <= '0';
+    else
+      reg113_rd_pulse <= (reg113_sel and ipb_isrd) and not reg113_rd_req_d;
+      reg113_rd_req_d <=  reg113_sel and ipb_isrd;
+    end if;
+  end if;
+end process;
+
+process(ipb_clk)
+begin
+  if rising_edge(ipb_clk) then
+    if ipb_rst = '1' then
+      fifo_rdptr <= (others=>'0');
+      reg113_q   <= (others=>'0');
+    else
+      if reg113_rd_pulse = '1' then
+        reg113_q   <= fifo_init(to_integer(fifo_rdptr));
+        fifo_rdptr <= (fifo_rdptr + 1) mod 16;
+      end if;
+    end if;
+  end if;
+end process;
 
 HDMIA_P(0)<=HDMIA0_P; HDMIA_N(0)<=HDMIA0_N; HDMIC_P(0)<=HDMIC0_P; HDMIC_N(0)<=HDMIC0_N;
 HDMIA_P(1)<=HDMIA1_P; HDMIA_N(1)<=HDMIA1_N; HDMIC_P(1)<=HDMIC1_P; HDMIC_N(1)<=HDMIC1_N;
@@ -1071,6 +1138,7 @@ FitGbtPrg: FIT_GBT_project
         TX_gbt_swt  => o_swt_TX,
         RX_gbt_swt_clk  => RX_gbt_swt_clk,
         TX_gbt_swt_clk  => TX_gbt_swt_clk,
+        MY_RESET_SWT_OUT => MY_RESET_SWT_OUT,
         GBT_Status_SWT_O => GBT_Status_SWT_O
         
 		);		
@@ -1265,6 +1333,8 @@ bccorrC_sel<= ipb_str when (ipb_addr(31 downto 12)= x"00005") and (ipb_isrd='1')
 reg110_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000110") else '0';
 reg111_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000111") else '0';
 reg112_sel <= ipb_str when (ipb_addr(31 downto 0) = x"00000112") and (ipb_isrd='1') else '0';
+reg113_sel <= ipb_str when (ipb_addr(31 downto 0)=  x"00000113") and (ipb_isrd='1') else '0';
+reg114_sel <= ipb_str when (ipb_addr(31 downto 0)=  x"00000114") and (ipb_isrd='1') else '0';
 
 PM_sel: for i in 0 to 19 generate
 pm_select(i)<= (pm_adr_sel and pm_ena(i) and (not inRst)) when (ipb_addr(13 downto 9)= i+1) else '0';  
@@ -1310,6 +1380,8 @@ else '1' when (ipb_wr='1') and (bc_mask_sel='1')
 else '1' when (reg110_sel='1') 
 else '1' when (reg111_sel='1')
 else '1' when (reg112_sel='1')
+else '1' when (reg113_sel='1')
+else '1' when (reg114_sel='1')
 else '0';
 
 ipb_in.ipb_err<= tcmx_err when (tcmx_select='1') 
@@ -1349,6 +1421,9 @@ else bc_corrC when (bccorrC_sel='1')
 else reg_110 when (reg110_sel='1') and (ipb_isrd='1')
 else reg_111 when (reg111_sel='1') and (ipb_isrd='1')
 else reg_112 when (reg112_sel='1') and (ipb_isrd='1')
+else reg113_q when (reg113_sel='1') and (ipb_isrd='1')
+else reg_114 when (reg114_sel='1') and (ipb_isrd='1')
+
 else (others =>'0'); 
 
 with ipb_addr(2 downto 0) select 
