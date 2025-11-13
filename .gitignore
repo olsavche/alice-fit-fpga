@@ -1,7 +1,7 @@
 *~
 *.jou
 build
-*.xcix
+#*.xcix
 *.pb
 .Xil
 *.zip
