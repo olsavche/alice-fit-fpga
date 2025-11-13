@@ -242,6 +242,7 @@ set files [list \
  [file normalize "${origin_dir}/converter/send_swt.vhd" ]\
  [file normalize "${origin_dir}/converter/receive_swt.vhd" ]\
  [file normalize "${origin_dir}/converter/mux.vhd" ]\
+ [file normalize "${origin_dir}/converter/ila_tx_rx.xcix" ]\
 ]
 #set imported_files [import_files -fileset sources_1 $files]
 add_files -norecurse -fileset sources_1 $files
@@ -253,6 +254,18 @@ if {[string equal $proj_create "yes"]} {
     add_files -norecurse -fileset $obj $files
 
     set_property -name "file_type" -value "VHDL" -objects [get_files [list "*.vhd"]]
+
+	set vhdl2008_files [list \
+	  [file normalize "$origin_dir/converter/converter_top.vhd"] \
+	  [file normalize "$origin_dir/converter/converter_fsm.vhd"] \
+	]
+
+	foreach p $vhdl2008_files {
+	  set f [get_files -of_objects [get_filesets sources_1] [list $p]]
+	  if {$f ne ""} {
+		set_property file_type {VHDL 2008} $f
+	  }
+	}
 
     # reconstruct all IP cores from the text data in ipcore_properties/
     fit::make_ipcores "${proj_dir}/generated"
