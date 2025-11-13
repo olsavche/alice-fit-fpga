@@ -242,7 +242,7 @@ set files [list \
  [file normalize "${origin_dir}/converter/send_swt.vhd" ]\
  [file normalize "${origin_dir}/converter/receive_swt.vhd" ]\
  [file normalize "${origin_dir}/converter/mux.vhd" ]\
- [file normalize "${origin_dir}/converter/ila_tx_rx.xcix" ]\
+ [file normalize "${origin_dir}/converter/ila_0.xcix" ]\
 ]
 #set imported_files [import_files -fileset sources_1 $files]
 add_files -norecurse -fileset sources_1 $files
@@ -258,6 +258,7 @@ if {[string equal $proj_create "yes"]} {
 	set vhdl2008_files [list \
 	  [file normalize "$origin_dir/converter/converter_top.vhd"] \
 	  [file normalize "$origin_dir/converter/converter_fsm.vhd"] \
+          [file normalize "$origin_dir/converter/mux.vhd"] \
 	]
 
 	foreach p $vhdl2008_files {
