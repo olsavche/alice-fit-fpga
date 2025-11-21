@@ -592,7 +592,7 @@ signal wbus_mux_mem: ipb_wbus;
 signal rbus_mux_mem: ipb_rbus;
 signal MY_RESET_OUT_N : std_logic;
 signal MY_RESET_OUT : std_logic;
-signal gbt_data_rx, o_swt_TX : STD_LOGIC_VECTOR (79 downto 0);
+signal gbt_data_rx, gbt_data_rx_d, o_swt_TX : STD_LOGIC_VECTOR (79 downto 0);
 signal probe2_s, gbt_ipbus_sel : std_logic_vector(0 downto 0);
 signal kc_wbus_to_mux   : ipb_wbus;
 signal kc_rbus_mux    : ipb_rbus;
@@ -639,6 +639,17 @@ signal fifo_rdptr       : unsigned(3 downto 0) := (others=>'0');
 signal reg113_rd_pulse  : std_logic := '0'; 
 signal reg113_rd_req_d  : std_logic := '0';
 
+signal ipbus_status, o_cdc_fifo_full_flag       : std_logic;
+signal o_gbt_swt_activity : std_logic; 
+signal led_gbt_swt_activity : std_logic; 
+signal Swt_Rx_ErrorDet_d1 : std_logic;
+signal Swt_Rx_ErrorDet_d2 : std_logic;
+signal Swt_Rx_ErrorDet_and : std_logic;
+
+constant CLK_FREQ_HZ  : integer := 20_000_000;
+constant PULSE_MS     : integer := 200;
+
+
 type fifo16_t is array (0 to 15) of std_logic_vector(31 downto 0);
 constant fifo_init : fifo16_t := (
   x"00000001", x"00000002", x"00000003", x"00000004",
@@ -659,36 +670,48 @@ PORT (
 END COMPONENT;
 begin
 
-Swt_Rx_ErrorDet(0) <= GBT_Status_SWT_O.gbtRx_ErrorDet_2;
-RX_gbt_swt_clk_ila(0) <=  RX_gbt_swt_clk;
+Swt_Rx_ErrorDet(0) <= Swt_Rx_ErrorDet_and; -- GBT_Status_SWT_O.gbtRx_ErrorDet_2;
+RX_gbt_swt_clk_ila(0) <= led_gbt_swt_activity;--RX_gbt_swt_clk;
 reg_112 <= reg_112_q;
 reg_114 <= (31 downto 4 => '0') & std_logic_vector(fifo_rdptr);
 MY_RESET_OUT_N <= not MY_RESET_SWT_OUT or sreset;
 
+process(RX_gbt_swt_clk)
+begin
+    if rising_edge(RX_gbt_swt_clk) then
+        Swt_Rx_ErrorDet_d1 <= GBT_Status_SWT_O.gbtRx_ErrorDet_2;  
+        gbt_data_rx_d <= gbt_data_rx;
+    end if;
+end process;
+
+Swt_Rx_ErrorDet_and <= Swt_Rx_ErrorDet_d1 or GBT_Status_SWT_O.gbtRx_ErrorDet_2 or Swt_Rx_ErrorDet_d2;
+
 your_instance_name : ila_0
 PORT MAP (
 	clk => CLK320A,
-	probe0 => gbt_data_rx,
+	probe0 => gbt_data_rx_d,
 	probe1 => RX_gbt_swt_clk_ila,
-	probe2 => Swt_Rx_ErrorDet,
+	probe2 => Swt_Rx_ErrorDet, 
 	probe3 => o_swt_TX
 );
-
 
 my_converter_top: entity work.converter_top
     port map (
         i_rst          => MY_RESET_OUT_N, 
+        i_Rx_ErrorDet => Swt_Rx_ErrorDet_and,
         i_ipb_clock    => ipb_clk, 
         i_gbt_rx_clock => RX_gbt_swt_clk,--RX_CLK, 
         i_gbt_tx_clock => TX_CLK,--TX_CLK, 
-        i_gbt_data     => gbt_data_rx, 
+        i_gbt_data     => gbt_data_rx_d, 
         o_gbt_data     => o_swt_TX,
         i_ipb_ack   => conv_rbus.ipb_ack,
         i_ipb_rdata => conv_rbus.ipb_rdata,
         o_ipb_strobe => converter_wbus.ipb_strobe, 
         o_ipb_write => converter_wbus.ipb_write, 
         o_ipb_wdata  => converter_wbus.ipb_wdata, 
-        o_ipb_addr  => converter_wbus.ipb_addr 
+        o_ipb_addr  => converter_wbus.ipb_addr,
+        o_cdc_fifo_full_flag  => o_cdc_fifo_full_flag,
+        o_gbt_swt_activity => o_gbt_swt_activity
     );
 
 mux_inst : entity work.mux
@@ -703,6 +726,28 @@ mux_inst : entity work.mux
         i_reset         => MY_RESET_OUT_N,
         i_ipb_clk       => ipb_clk,
         i_sel           => gbt_ipbus_sel
+    );
+    
+gbt_swt_activity : entity work.pulse_stretcher
+    generic map(
+    CLK_FREQ_HZ => CLK_FREQ_HZ,
+    PULSE_MS    => PULSE_MS)
+    port map(
+        clk     => ipb_clk,
+        rst     => '0',
+        i_pulse => o_gbt_swt_activity,
+        o_pulse => led_gbt_swt_activity
+    );
+    
+gbt_swt_activityyy : entity work.pulse_stretcher
+    generic map(
+    CLK_FREQ_HZ => 40_000_000,
+    PULSE_MS    => 1000)
+    port map(
+        clk     => RX_gbt_swt_clk,
+        rst     => '0',
+        i_pulse => GBT_Status_SWT_O.gbtRx_ErrorDet_2,
+        o_pulse => Swt_Rx_ErrorDet_d2
     );
 
 ---------------------------------------------------------------------------------------
@@ -834,21 +879,13 @@ conv_rbus.ipb_rdata <= conv_rbus_over_rdat when conv_rbus_over_ack='1'  else con
 
 
 my_register_102(0) <= gbt_ipbus_sel(0);
-my_register_102(2) <= GBT_Status_SWT_O.gbtRx_Ready_2;
---my_register_102(15) <= not GBTRX_ready;
---my_register_102(16) <= GBTRX_ready;
---my_register_102(17)<=rxerr0 or (not GBTRX_ready);
---my_register_102(18)<=txled0 or (not GBTRX_ready);                                  
---my_register_102(19)<=rxled0 or (not GBTRX_ready);
+my_register_102(1) <= o_cdc_fifo_full_flag;
+my_register_102(2) <= not GBT_Status_SWT_O.gbtRx_Ready_2;
+-- my_register_102(3) -- set GBT-SWT
+my_register_102(4) <= not ipbus_status;
+-- my_register_102(5) -- set IPBUS-GMII
 
---my_register_102(20)<=    GBT_Status_SWT_O.gbtRx_ErrorDet_2      ;
---my_register_102(21)<=    GBT_Status_SWT_O.mgt_phalin_cplllock_2 ;
---my_register_102(22)<=    GBT_Status_SWT_O.rxWordClkReady_2      ;
---my_register_102(23)<=    GBT_Status_SWT_O.rxFrameClkReady_2     ;
---my_register_102(24)<=    GBT_Status_SWT_O.mgtLinkReady_2        ;
---my_register_102(25)<=    GBT_Status_SWT_O.tx_resetDone_2        ;
---my_register_102(26)<=    GBT_Status_SWT_O.tx_fsmResetDone_2     ;
---my_register_102(27)<=    GBT_Status_SWT_O.gbtRx_Ready_2;
+
 
 ---------------------------------------------------------------------------------------
 -- fifo - 0x113
@@ -989,8 +1026,11 @@ ledo1: for i in 0 to 7 generate
 leso0: OBUF  port map (O => LED(i), I => ledi(i) );
 end generate;
 
-ledi(1 downto 0)<= not ipb_leds; 
-ledi(2)<=not GBTRX_ready;
+
+--ledi(1 downto 0)<= not ipb_leds; 
+ledi(0)<= not GBT_Status_SWT_O.gbtRx_Ready_2;
+ledi(1)<= not led_gbt_swt_activity;
+ledi(2)<= not GBTRX_ready;
 ledi(3)<=rxerr0 or (not GBTRX_ready);
 ledi(4)<=txled0 or (not GBTRX_ready);                                  
 ledi(5)<=rxled0 or (not GBTRX_ready);   
@@ -1055,7 +1095,8 @@ IDL1 : IDELAYCTRL
     ipb_out => ipb_out,
 
     clk_200_o => clk200,
-    locked => ipb_locked
+    locked => ipb_locked,
+    ipbus_status => ipbus_status
   );
 
 

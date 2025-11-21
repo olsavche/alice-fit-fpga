@@ -41,7 +41,8 @@ entity ipbus_gmii is
     ipb_out : out ipb_wbus;
 
     clk_200_o : out std_logic;
-    locked    : out std_logic
+    locked    : out std_logic;
+    ipbus_status : out std_logic
   );
 end entity;
 
@@ -142,6 +143,18 @@ end generate;
   leds(1 downto 0) <= (led_p(0), '0');
 
 
+  u_monoflop : entity work.ipbus_status
+    generic map (
+        CLK_FREQ_HZ => 125_000_000,
+        HOLD_TIME_S => 2
+    )
+    port map (
+        clk     => clk125,
+        rst   => '0',
+        i_pulse => mac_rx_valid_async,
+        o_q     => ipbus_status
+    );
+    
   giga_eth_mac : entity work.giga_eth_mac
   port map (
     gtx_clk     => clk125,

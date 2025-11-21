@@ -4,6 +4,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity receive_swt is
     port (
         i_clock : in std_logic;
+        i_Rx_ErrorDet : in std_logic;
         i_reset : in std_logic;
         i_data_r : in std_logic_vector(79 downto 0);
         o_data : out std_logic_vector(79 downto 0); 
@@ -25,7 +26,7 @@ architecture rtl of receive_swt is
                     o_data   <= (others => '0');
                     w_en_r  <= '0';
                 elsif rising_edge(i_clock) then
-                    if i_data_r(79 downto 76) = c_SWT then
+                    if i_data_r(79 downto 76) = c_SWT and (i_Rx_ErrorDet = '0') then
                         o_data   <= i_data_r(79 downto 0);
                         w_en_r  <= '1';
                     else 

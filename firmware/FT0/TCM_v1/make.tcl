@@ -243,6 +243,9 @@ set files [list \
  [file normalize "${origin_dir}/converter/receive_swt.vhd" ]\
  [file normalize "${origin_dir}/converter/mux.vhd" ]\
  [file normalize "${origin_dir}/converter/ila_0.xcix" ]\
+ [file normalize "${origin_dir}/converter/cdc_fifo_full_flag.vhd" ]\
+ [file normalize "${origin_dir}/converter/ipbus_status.vhd" ]\
+ [file normalize "${origin_dir}/converter/pulse_stretcher.vhd" ]\
 ]
 #set imported_files [import_files -fileset sources_1 $files]
 add_files -norecurse -fileset sources_1 $files

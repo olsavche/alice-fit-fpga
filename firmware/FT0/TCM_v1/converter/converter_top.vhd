@@ -6,6 +6,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity converter_top is
     Port ( 
         i_rst   : in  std_logic;
+        i_Rx_ErrorDet : in  std_logic;
         i_ipb_clock : in std_logic;
         i_gbt_rx_clock : in std_logic;
         i_gbt_tx_clock : in std_logic;
@@ -17,7 +18,9 @@ entity converter_top is
         o_ipb_write: out std_logic;
         o_ipb_wdata : out std_logic_vector(31 downto 0);
         o_ipb_addr : out std_logic_vector(31 downto 0);
-        o_my_cdc_xpm_fifo_async_o_full: out std_logic 
+        o_my_cdc_xpm_fifo_async_o_full: out std_logic ;
+        o_cdc_fifo_full_flag: out std_logic;
+        o_gbt_swt_activity: out std_logic
     );
 end converter_top;
 
@@ -71,10 +74,12 @@ signal probe3_sig : std_logic_vector(0 downto 0);
 
 begin
 
+o_gbt_swt_activity <= my_receive_swt_o_w_en_r;
 
 my_receive_swt : entity work.receive_swt
     port map (
-        i_clock  => i_gbt_rx_clock,    
+        i_clock  => i_gbt_rx_clock,  
+        i_Rx_ErrorDet => i_Rx_ErrorDet,  
         i_reset  => i_rst,    
         i_data_r => i_gbt_data,   
         o_data   => my_receive_swt_o_data,     
@@ -152,6 +157,14 @@ my_send_swt : entity work.send_swt
         o_data       => my_send_swt_o_data
     );
     
+cdc_fifo_full_flag_inst: entity work.cdc_fifo_full_flag
+    port map (
+        clk     => i_ipb_clock,
+        reset   => i_rst,
+        i_pulse => my_cdc_xpm_fifo_async_o_full,
+        o_flag  => o_cdc_fifo_full_flag
+    );   
+
     
 process(i_ipb_clock)
 begin
