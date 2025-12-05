@@ -2,9 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.ipbus.all;
---use work.my_package.all;
---use work.tb_package.all;
-use work.ipbus.all;
 
 -- sel 0  -> ipbus 
 -- sel 1  -> gbt
@@ -15,14 +12,14 @@ entity mux is
     );
     port (
         -- ipbus tcm
-            i_wbus_kc705      : in ipb_wbus;
-            o_rbus_kc705      : out ipb_rbus;
-        -- payload 
-            o_wbus_mem      : out ipb_wbus;
-            i_rbus_mem      : in ipb_rbus;
+            i_ipbus_wbus      : in ipb_wbus;
+            o_ipbus_rbus      : out ipb_rbus;
+        -- reg 
+            o_reg      : out ipb_wbus;
+            i_reg      : in ipb_rbus;
         -- ipbus <-> gbt 
-            i_wbus_converter       : in ipb_wbus;
-            o_rbus_converter       : out ipb_rbus;
+            i_converter_wbus       : in ipb_wbus;
+            o_converter_rbus       : out ipb_rbus;
         -- clk and sel 
             i_reset         : in std_logic;
             i_ipb_clk       : in std_logic;
@@ -53,17 +50,17 @@ begin
         begin
             if rising_edge(i_ipb_clk) then
                 if i_reset = '1' then
-                    o_wbus_mem  <= ipb_wbus_zero;
-                    o_rbus_kc705  <= ipb_rbus_zero;
-                    o_rbus_converter   <= ipb_rbus_zero;
+                    o_reg  <= ipb_wbus_zero;
+                    o_ipbus_rbus  <= ipb_rbus_zero;
+                    o_converter_rbus   <= ipb_rbus_zero;
                 elsif i_sel = "0" then
-                    o_wbus_mem  <= i_wbus_kc705;
-                    o_rbus_kc705  <= i_rbus_mem;
-                    o_rbus_converter   <= ipb_rbus_zero;
+                    o_reg  <= i_ipbus_wbus;
+                    o_ipbus_rbus  <= i_reg;
+                    o_converter_rbus   <= ipb_rbus_zero;
                 else
-                    o_wbus_mem  <= i_wbus_converter;
-                    o_rbus_converter   <= i_rbus_mem;
-                    o_rbus_kc705  <= ipb_rbus_zero;
+                    o_reg  <= i_converter_wbus;
+                    o_converter_rbus   <= i_reg;
+                    o_ipbus_rbus  <= ipb_rbus_zero;
                 end if;
             end if;
         end process;
@@ -73,18 +70,16 @@ begin
         process(all)
         begin
                 if i_sel = "0" then
-                    o_wbus_mem  <= i_wbus_kc705;
-                    o_rbus_kc705  <= i_rbus_mem;
-                    o_rbus_converter   <= ipb_rbus_zero;
+                    o_reg  <= i_ipbus_wbus;
+                    o_ipbus_rbus  <= i_reg;
+                    o_converter_rbus   <= ipb_rbus_zero;
                 else
-                    o_wbus_mem  <= i_wbus_converter;
-                    o_rbus_converter   <= i_rbus_mem;
-                    o_rbus_kc705  <= ipb_rbus_zero;
+                    o_reg  <= i_converter_wbus;
+                    o_converter_rbus   <= i_reg;
+                    o_ipbus_rbus  <= ipb_rbus_zero;
                 end if;
         end process;
     end generate;
 
 
 end rtl;
-
-

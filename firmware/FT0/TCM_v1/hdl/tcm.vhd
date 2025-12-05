@@ -593,20 +593,20 @@ signal rbus_mux_mem: ipb_rbus;
 signal MY_RESET_OUT_N : std_logic;
 signal MY_RESET_OUT : std_logic;
 signal gbt_data_rx, gbt_data_rx_d, o_swt_TX : STD_LOGIC_VECTOR (79 downto 0);
-signal probe2_s, gbt_ipbus_sel : std_logic_vector(0 downto 0);
+signal probe2_s, mux_select : std_logic_vector(0 downto 0);
 signal kc_wbus_to_mux   : ipb_wbus;
 signal kc_rbus_mux    : ipb_rbus;
 signal conv_wbus_to_mux : ipb_wbus;
 signal conv_rbus_mux  : ipb_rbus;
-signal wbus_mux_out   : ipb_wbus;  
+signal o_mux_reg   : ipb_wbus;  
 signal kc_wbus    : ipb_wbus;
 signal conv_wbus  : ipb_wbus;
 signal kc_rbus    : ipb_rbus;
 signal conv_rbus  : ipb_rbus;
-signal my102_grant_kc, my102_grant_conv: std_logic;  
+signal my102_ack_ipbus, my102_ack_conv: std_logic;  
 signal my102_busy      : std_logic;
 signal my102_owner     : std_logic;   -- 0 = ipbus 1 = converter
-signal my102_req_kc,   my102_req_conv  : std_logic; -- strobe
+signal my102_req_ipbus,   my102_req_conv  : std_logic; -- strobe
 constant MY102_ADDR : std_logic_vector(31 downto 0) := x"00000102";
 signal my102_ack                         : std_logic;
 signal my102_wr_kc,    my102_wr_conv   : std_logic;
@@ -717,15 +717,15 @@ my_converter_top: entity work.converter_top
 mux_inst : entity work.mux
     generic map ( USE_CLK => false )
     port map (
-        i_wbus_kc705    => kc_wbus_to_mux,     
-        o_rbus_kc705    => kc_rbus_mux,        
-        o_wbus_mem      => wbus_mux_out,       
-        i_rbus_mem      => rbus_mux_mem,       
-        i_wbus_converter=> conv_wbus_to_mux,   
-        o_rbus_converter=> conv_rbus_mux,      
+        i_ipbus_wbus    => kc_wbus_to_mux,     
+        o_ipbus_rbus    => kc_rbus_mux,        
+        o_reg      => o_mux_reg,    -- o_mux_reg   
+        i_reg      => rbus_mux_mem,       
+        i_converter_wbus => conv_wbus_to_mux,   
+        o_converter_rbus => conv_rbus_mux,      
         i_reset         => MY_RESET_OUT_N,
         i_ipb_clk       => ipb_clk,
-        i_sel           => gbt_ipbus_sel
+        i_sel           => mux_select
     );
     
 gbt_swt_activity : entity work.pulse_stretcher
@@ -758,19 +758,19 @@ kc_wbus   <= ipb_out;
 conv_wbus <= converter_wbus;  
 ipb_in <= kc_rbus;
 converter_rbus <= conv_rbus;
-wbus_mux_mem <= wbus_mux_out;
+wbus_mux_mem <= o_mux_reg;
 
 -- ipbus
 kc_wbus_to_mux.ipb_write  <= kc_wbus.ipb_write;
 kc_wbus_to_mux.ipb_addr   <= kc_wbus.ipb_addr;
 kc_wbus_to_mux.ipb_wdata  <= kc_wbus.ipb_wdata;
-kc_wbus_to_mux.ipb_strobe <= kc_wbus.ipb_strobe when not (kc_wbus.ipb_addr = MY102_ADDR and my102_grant_kc = '1') else '0';
+kc_wbus_to_mux.ipb_strobe <= kc_wbus.ipb_strobe when not (kc_wbus.ipb_addr = MY102_ADDR and my102_ack_ipbus = '1') else '0';
 
 -- converter
 conv_wbus_to_mux.ipb_write  <= conv_wbus.ipb_write;
 conv_wbus_to_mux.ipb_addr   <= conv_wbus.ipb_addr;
 conv_wbus_to_mux.ipb_wdata  <= conv_wbus.ipb_wdata;
-conv_wbus_to_mux.ipb_strobe <= conv_wbus.ipb_strobe when not (conv_wbus.ipb_addr = MY102_ADDR and my102_grant_conv = '1') else '0';
+conv_wbus_to_mux.ipb_strobe <= conv_wbus.ipb_strobe when not (conv_wbus.ipb_addr = MY102_ADDR and my102_ack_conv = '1') else '0';
 
 
 process(ipb_clk)
@@ -781,12 +781,12 @@ begin
       reg102_cmd6_pulse <= '0';
     else
       reg102_cmd4_pulse <=
-           (my102_grant_kc   and my102_wr_kc   and kc_wbus.ipb_wdata(3))
-        or (my102_grant_conv and my102_wr_conv and conv_wbus.ipb_wdata(3));
+           (my102_ack_ipbus   and my102_wr_kc   and kc_wbus.ipb_wdata(3))
+        or (my102_ack_conv and my102_wr_conv and conv_wbus.ipb_wdata(3));
 
       reg102_cmd6_pulse <=
-           (my102_grant_kc   and my102_wr_kc   and kc_wbus.ipb_wdata(5))
-        or (my102_grant_conv and my102_wr_conv and conv_wbus.ipb_wdata(5));
+           (my102_ack_ipbus   and my102_wr_kc   and kc_wbus.ipb_wdata(5))
+        or (my102_ack_conv and my102_wr_conv and conv_wbus.ipb_wdata(5));
     end if;
   end if;
 end process;
@@ -795,12 +795,12 @@ process(ipb_clk)
 begin
   if rising_edge(ipb_clk) then
     if ipb_rst = '1' then
-        gbt_ipbus_sel <= (others => '1');                   
+        mux_select <= (others => '1');                   
     else
       if reg102_cmd4_pulse = '1' then      
-        gbt_ipbus_sel <= (others => '1');  
+        mux_select <= (others => '1');  
       elsif reg102_cmd6_pulse = '1' then   
-        gbt_ipbus_sel <= (others => '0');  
+        mux_select <= (others => '0');  
       end if;                               
     end if;
   end if;
@@ -810,13 +810,15 @@ end process;
 -- arbiter for reg 102
 ---------------------------------------------------------------------------------------
 
-my102_grant_kc   <= '1' when (my102_busy='1' and my102_owner='0' and my102_req_kc='1') else '0';
-my102_grant_conv <= '1' when (my102_busy='1' and my102_owner='1' and my102_req_conv='1') else '0';
-my102_ack        <= my102_grant_kc or my102_grant_conv;
+my102_ack_ipbus   <= '1' when (my102_busy='1' and my102_owner='0' and my102_req_ipbus='1') else '0'; -- my102_ack_ipbus
+my102_ack_conv <= '1' when (my102_busy='1' and my102_owner='1' and my102_req_conv='1') else '0';
+my102_ack        <= my102_ack_ipbus or my102_ack_conv;
 
-my102_req_kc   <= kc_wbus.ipb_strobe   when kc_wbus.ipb_addr = MY102_ADDR else '0';
+my102_req_ipbus   <= kc_wbus.ipb_strobe   when kc_wbus.ipb_addr = MY102_ADDR else '0'; -- 
 my102_req_conv <= conv_wbus.ipb_strobe when conv_wbus.ipb_addr = MY102_ADDR else '0';
 
+-- my102_owner -> 1 ipbus
+-- my102_owner -> 0 converter
 process(ipb_clk)
 begin
   if rising_edge(ipb_clk) then
@@ -825,11 +827,11 @@ begin
       my102_owner <= '0';
     else
       if my102_busy = '0' then
-        if my102_req_kc = '1' then
-          my102_owner <= '0';  -- ipbus
-          my102_busy  <= '1';
-        elsif my102_req_conv = '1' then
+        if my102_req_conv = '1' then  
           my102_owner <= '1';  -- converter
+          my102_busy  <= '1';
+        elsif my102_req_ipbus = '1' then
+          my102_owner <= '0';  -- ipbus
           my102_busy  <= '1';
         end if;
       else
@@ -855,16 +857,16 @@ end process;
 --  end if;
 --end process;    
 
-my102_wr_kc    <= kc_wbus.ipb_write   and my102_req_kc;  
+my102_wr_kc    <= kc_wbus.ipb_write   and my102_req_ipbus;  
 my102_wr_conv  <= conv_wbus.ipb_write and my102_req_conv;
 
 ---------------------------------------------------------------------------------------
 -- read reg 102
 ---------------------------------------------------------------------------------------
-kc_rbus_over_ack  <= my102_grant_kc; 
+kc_rbus_over_ack  <= my102_ack_ipbus; 
 kc_rbus_over_rdat <= my_register_102;
 
-conv_rbus_over_ack  <= my102_grant_conv; 
+conv_rbus_over_ack  <= my102_ack_conv; 
 conv_rbus_over_rdat <= my_register_102;
 
 -- ipbus rbus:
@@ -878,7 +880,7 @@ conv_rbus.ipb_err   <= conv_rbus_mux.ipb_err;
 conv_rbus.ipb_rdata <= conv_rbus_over_rdat when conv_rbus_over_ack='1'  else conv_rbus_mux.ipb_rdata;
 
 
-my_register_102(0) <= gbt_ipbus_sel(0);
+my_register_102(0) <= mux_select(0);
 my_register_102(1) <= o_cdc_fifo_full_flag;
 my_register_102(2) <= not GBT_Status_SWT_O.gbtRx_Ready_2;
 -- my_register_102(3) -- set GBT-SWT
@@ -1399,10 +1401,13 @@ pm_err<=(not pm_ena(to_integer(unsigned(ipb_addr(13 downto 9)))-1)) or inRst;
 --ipb_in.ipb_ack<= tcmx_ack when (tcmx_select='1') 
 
 ---------------------------------------------------
-ipb_data_out<=wbus_mux_mem.ipb_wdata; ipb_addr<=wbus_mux_mem.ipb_addr;
+ipb_data_out<=wbus_mux_mem.ipb_wdata; 
+ipb_addr<=wbus_mux_mem.ipb_addr;
 rbus_mux_mem.ipb_rdata<=ipb_data_in; 
-ipb_iswr<=wbus_mux_mem.ipb_write and wbus_mux_mem.ipb_strobe; ipb_isrd<=(not wbus_mux_mem.ipb_write) and wbus_mux_mem.ipb_strobe; 
-ipb_str<=wbus_mux_mem.ipb_strobe; ipb_wr<= wbus_mux_mem.ipb_write; 
+ipb_iswr<=wbus_mux_mem.ipb_write and wbus_mux_mem.ipb_strobe; 
+ipb_isrd<=(not wbus_mux_mem.ipb_write) and wbus_mux_mem.ipb_strobe; 
+ipb_str<=wbus_mux_mem.ipb_strobe; 
+ipb_wr<= wbus_mux_mem.ipb_write; 
 rbus_mux_mem.ipb_ack<= tcmx_ack when (tcmx_select='1')
 -----------------------------
 else tcmr_ack when (tcmr_select='1')
