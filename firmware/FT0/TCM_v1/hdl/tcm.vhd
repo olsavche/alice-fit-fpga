@@ -610,10 +610,6 @@ signal my102_wstrobe_ipbus,   my102_wstrobe_conv  : std_logic; -- my102_wstrobe_
 constant MY102_ADDR : std_logic_vector(31 downto 0) := x"00000102";
 signal my102_ack                         : std_logic;
 signal my102_wr_ipbus,    my102_wr_conv   : std_logic; 
-signal kc_rbus_over_ack  : std_logic;
-signal kc_rbus_over_rdat : std_logic_vector(31 downto 0);
-signal conv_rbus_over_ack  : std_logic;
-signal conv_rbus_over_rdat : std_logic_vector(31 downto 0);
 signal    RX_gbt_swt_clk     :  std_logic;
 signal    TX_gbt_swt_clk     :  std_logic;
 signal RX_gbt_swt_clk_ila : std_logic_vector(0 downto 0);
@@ -814,7 +810,7 @@ my102_ack_ipbus   <= '1' when (my102_busy='1' and my102_owner='0' and my102_wstr
 my102_ack_conv <= '1' when (my102_busy='1' and my102_owner='1' and my102_wstrobe_conv ='1') else '0';
 my102_ack        <= my102_ack_ipbus or my102_ack_conv;
 
-my102_wstrobe_ipbus   <= kc_wbus.ipb_strobe   when kc_wbus.ipb_addr = MY102_ADDR else '0'; -- 
+my102_wstrobe_ipbus   <= kc_wbus.ipb_strobe   when kc_wbus.ipb_addr = MY102_ADDR else '0';
 my102_wstrobe_conv <= conv_wbus.ipb_strobe when conv_wbus.ipb_addr = MY102_ADDR else '0';
 
 -- my102_owner -> 1 ipbus
@@ -863,21 +859,15 @@ my102_wr_conv  <= conv_wbus.ipb_write and my102_wstrobe_conv;
 ---------------------------------------------------------------------------------------
 -- read reg 102
 ---------------------------------------------------------------------------------------
-kc_rbus_over_ack  <= my102_ack_ipbus; 
-kc_rbus_over_rdat <= my_register_102;
-
-conv_rbus_over_ack  <= my102_ack_conv; 
-conv_rbus_over_rdat <= my_register_102;
-
 -- ipbus rbus:
-kc_rbus.ipb_ack   <= kc_rbus_over_ack  when kc_rbus_over_ack='1'  else o_ipbus_rbus_mux.ipb_ack;              
+kc_rbus.ipb_ack   <= my102_ack_ipbus  when my102_ack_ipbus='1'  else o_ipbus_rbus_mux.ipb_ack;              
 kc_rbus.ipb_err   <= o_ipbus_rbus_mux.ipb_err;                                                                
-kc_rbus.ipb_rdata <= kc_rbus_over_rdat when kc_rbus_over_ack='1'  else o_ipbus_rbus_mux.ipb_rdata;            
+kc_rbus.ipb_rdata <= my_register_102 when my102_ack_ipbus='1'  else o_ipbus_rbus_mux.ipb_rdata;            
 
 -- converter rbus:  
-conv_rbus.ipb_ack   <= conv_rbus_over_ack  when conv_rbus_over_ack='1'  else conv_rbus_mux.ipb_ack;     
+conv_rbus.ipb_ack   <= my102_ack_conv  when my102_ack_conv='1'  else conv_rbus_mux.ipb_ack;     
 conv_rbus.ipb_err   <= conv_rbus_mux.ipb_err;                                                           
-conv_rbus.ipb_rdata <= conv_rbus_over_rdat when conv_rbus_over_ack='1'  else conv_rbus_mux.ipb_rdata;
+conv_rbus.ipb_rdata <= my_register_102 when my102_ack_conv='1'  else conv_rbus_mux.ipb_rdata;
 
 
 my_register_102(0) <= mux_select(0);
@@ -886,8 +876,6 @@ my_register_102(2) <= not GBT_Status_SWT_O.gbtRx_Ready_2;
 -- my_register_102(3) -- set GBT-SWT
 my_register_102(4) <= not ipbus_status;
 -- my_register_102(5) -- set IPBUS-GMII
-
-
 
 ---------------------------------------------------------------------------------------
 -- fifo - 0x113
