@@ -637,6 +637,11 @@ signal Swt_Rx_ErrorDet_d1 : std_logic;
 signal Swt_Rx_ErrorDet_d2 : std_logic;
 signal Swt_Rx_ErrorDet_and : std_logic;
 
+signal gbt_reset_addr_d8_bit_12, gbt_reset_addr_d8_bit_12_extended : std_logic;
+signal ila_readout_control_reg         : std_logic_vector(31 downto 0) := (others=>'0');
+signal gbt_reset_edge_d, gbt_reset_edge : std_logic;
+
+
 constant CLK_FREQ_HZ  : integer := 20_000_000;
 constant PULSE_MS     : integer := 200;
 
@@ -659,8 +664,13 @@ PORT (
 	probe3 : IN STD_LOGIC_VECTOR(79 DOWNTO 0)
 );
 END COMPONENT;
+
+attribute MARK_DEBUG : string;
+attribute MARK_DEBUG of gbt_reset_addr_d8_bit_12, ila_readout_control_reg, ipb_data_out, gbt_reset_edge_d, gbt_reset_edge : signal is "TRUE";
+
 begin
 
+ila_readout_control_reg <= readout_control_reg(0);
 Swt_Rx_ErrorDet(0) <= Swt_Rx_ErrorDet_and; -- GBT_Status_SWT_O.gbtRx_ErrorDet_2;
 RX_gbt_swt_clk_ila(0) <= led_gbt_swt_activity;--RX_gbt_swt_clk;
 reg_112 <= reg_112_q;
@@ -741,6 +751,17 @@ gbt_swt_activityyy : entity work.pulse_stretcher
         o_pulse => Swt_Rx_ErrorDet_d2
     );
 
+gbt_reset_d8 : entity work.pulse_stretcher
+    generic map(
+    CLK_FREQ_HZ => 31_125_000,
+    PULSE_MS    => 10)
+    port map(
+        clk     => ipb_clk,
+        rst     => '0',
+        i_pulse => gbt_reset_addr_d8_bit_12,
+        o_pulse => gbt_reset_addr_d8_bit_12_extended
+    );
+    
 ---------------------------------------------------------------------------------------
 --  mux ipbus/converter
 ---------------------------------------------------------------------------------------
@@ -1719,12 +1740,21 @@ if (pmena_sel='1') and (ipb_iswr='1') then pm_ena<=ipb_data_out(19 downto 0); en
 if (reg110_sel = '1') and (ipb_iswr = '1') then reg_110 <= ipb_data_out; end if;
 if (reg111_sel = '1') and (ipb_iswr = '1') then reg_111 <= ipb_data_out; end if;
 
+readout_control_reg(0)(12) <= gbt_reset_addr_d8_bit_12_extended;
+
 if (rdoutc_sel='1') and (ipb_iswr='1') then
-  if  (ipb_addr(7 downto 0)=16#D8#) then readout_control_reg(0)<= ipb_data_out;
+  if  (ipb_addr(7 downto 0)=16#D8#) then 
+            --readout_control_reg(0)<= ipb_data_out;
+            readout_control_reg(0)(31 downto 13) <= ipb_data_out(31 downto 13);
+            readout_control_reg(0)(11 downto 0)  <= ipb_data_out(11 downto 0);
+            gbt_reset_edge <= ipb_data_out(12);
     else  
      readout_control_reg(to_integer(unsigned(ipb_addr(7 downto 0)))-16#D8#)<=ipb_data_out(31 downto 0);
    end if;
 end if;
+
+gbt_reset_edge_d <= gbt_reset_edge;                 
+gbt_reset_addr_d8_bit_12 <= gbt_reset_edge and not gbt_reset_edge_d;
 
 if (ipb_leds(0)/=IPB_rdy0) then IPB_chg<='1';
   else 
