@@ -870,7 +870,7 @@ my102_wr_conv  <= converter_wbus.ipb_write and my102_wstrobe_conv;
 ---------------------------------------------------------------------------------------
 -- ipbus rbus:
 ipb_in.ipb_ack   <= my102_ack_ipbus  when my102_ack_ipbus='1'  else o_ipbus_rbus_mux.ipb_ack;              
-ipb_in.ipb_err   <= o_ipbus_rbus_mux.ipb_err;                                                                
+--ipb_in.ipb_err   <= o_ipbus_rbus_mux.ipb_err;                                                                
 ipb_in.ipb_rdata <= my_register_102 when my102_ack_ipbus='1'  else o_ipbus_rbus_mux.ipb_rdata;            
 
 -- converter rbus:  
@@ -1430,7 +1430,7 @@ else '0';
 ipb_in.ipb_err<= tcmx_err when (tcmx_select='1') 
 else Tcnt_err when (Tcnt_sel='1')
 else pm_err when (pm_adr_sel='1')
-else '0';
+else o_ipbus_rbus_mux.ipb_err;
  
  
  
